@@ -13,7 +13,7 @@ from kivymd.uix.menu import MDDropdownMenu
 URL='https://tesis-reconocimiento-facial.herokuapp.com/apertura/'
 CONTRATO="servidorarchpc"
 ID_USUARIO="1262315361"
-
+URL_CONTRATOS="https://tesis-reconocimiento-facial.herokuapp.com/agregarcontratosapi/"
 #store = DictStore('STOREXD')
 # store = JsonStore('jsonstore.json')
 # store.put('datos_usuario', contrato=CONTRATO, id_usuario=ID_USUARIO)
