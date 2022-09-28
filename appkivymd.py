@@ -11,6 +11,7 @@ import id_user_style
 from kivy.lang import Builder
 from kivymd.uix.dropdownitem import MDDropDownItem
 from kivymd.uix.menu import MDDropdownMenu
+# from kivy.uix.screenmanager import ScreenManager, Screen
 URL='https://tesis-reconocimiento-facial.herokuapp.com/apertura/'
 CONTRATO="servidorarchpc"
 ID_USUARIO="1262315361"
@@ -54,8 +55,10 @@ class seguricel_prototipo(MDApp):
         self.theme_cls.primary_hue = "400"
         self.theme_cls.theme_style = "Dark"
         self.contrato_seleccionado = ''
-        self.cerrar_dialogo = MDFlatButton(text='cerrar',
-                                          on_release=self.cerrar_error)
+        # self.cerrar_dialogo = MDFlatButton(text='cerrar',
+        #                                   on_release=self.cerrar_error)
+        self.cerrar_dialogo = Builder.load_string(id_user_style.boton_cerrar_dialogo)
+        self.cerrar_dialogo.bind(on_release=self.cerrar_error)               
         self.dialogo = MDDialog(title='Error',
                      size_hint=(0.7,0.3),
                      buttons=[self.cerrar_dialogo])

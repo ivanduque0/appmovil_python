@@ -21,9 +21,11 @@ MDDropDownItem:
     id: drop_item
     text: 'seleccione contrato'
     pos_hint: {'center_x': 0.5, 'center_y': 0.8}
-     
-
+"""
     
+boton_cerrar_dialogo = """
+MDFlatButton
+    text: 'Cerrar' 
 """
 
 #MDRectangleFlatButton MDRoundFlatButton:
