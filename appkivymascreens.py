@@ -69,7 +69,7 @@ class seguricel_prototipo(MDApp):
                     #  color =(1, 0, .65, 1),
                      background_normal = 'acceso_principal.png',
                     #  background_down ='down.png',
-                     size_hint = (.3, .3),
+                     size_hint = (.9, .3),
                      pos_hint = {'center_x': 0.5, 'center_y': 0.8}
                    )
         btn.bind(on_press=self.enviar_peticion_acceso1)

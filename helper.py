@@ -31,6 +31,7 @@ MDFlatButton
 boton_screen_datos = """
 MDIconButton:
     icon: "logo_seguricel.png"
-    pos_hint: {'x': 0.85, 'y': 0.05}
+    pos_hint: {'center_x': 0.87, 'center_y': 0.08}
     icon_size: "50sp"
+    size_hint:(0.20,0.1)
 """
