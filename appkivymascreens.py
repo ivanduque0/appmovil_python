@@ -1,61 +1,27 @@
-from kivy.storage.dictstore import DictStore
 from kivy.storage.jsonstore import JsonStore
 import requests
 from kivymd.app import MDApp
 from kivy.uix.button import Button
-from kivymd.uix.label import MDLabel, MDIcon
-from kivymd.font_definitions import theme_font_styles
-from kivymd.uix.button import MDFloatingActionButton, MDFlatButton, MDRectangleFlatButton
 from kivymd.uix.dialog import MDDialog
 import helper
 from kivy.lang import Builder
-from kivymd.uix.dropdownitem import MDDropDownItem
 from kivymd.uix.menu import MDDropdownMenu
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.floatlayout import FloatLayout
 # from kivy.uix.screenmanager import ScreenManager, Screen
 URL='https://tesis-reconocimiento-facial.herokuapp.com/apertura/'
-CONTRATO="servidorarchpc"
-ID_USUARIO="1262315361"
 URL_CONTRATOS="https://tesis-reconocimiento-facial.herokuapp.com/agregarcontratosapi/"
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
 # store.put('datos_usuario', contrato=CONTRATO, id_usuario=ID_USUARIO)
 
-
 class seguricel_prototipo(MDApp):
-    # def __init__(self, **kwargs):
-    #     super().__init__(**kwargs)
-    #     self.screen = Screen()
-    #     lista = Builder.load_string(helper.lista_contratos)
-    #     self.screen.add_widget(lista)
-    #     # lista = Builder.load_string(helper.lista_contratos)
-    #     # self.screen.add_widget(lista)
-    #     boton_guardar = Builder.load_string(helper.guardar_button)
-    #     self.screen.add_widget(boton_guardar)
-    #     id_usuario = Builder.load_string(helper.id_usuario_input)
-    #     self.screen.add_widget(id_usuario)
-    #     menu_items = [
-    #         {
-    #             "text": f"Item {i}",
-    #             "viewclass": "OneLineListItem",
-    #             "on_release": lambda x=f"Item {i}": self.menu_callback(x),
-    #         } for i in range(5)
-    #     ]
-    #     self.menu = MDDropdownMenu(
-    #         caller=self.screen,
-    #         items=menu_items,
-    #         width_mult=4,
-    #     )
-    def build(self):
-        # label = MDLabel(text="Hello world", halign="center", theme_text_color="Error",
-        #                 font_style="Subtitle2")
 
-        # label = MDLabel(text="Hello world", halign="center",theme_text_color="Custom",
-        #                 text_color=(0,0,1,1))
+    def build(self):
         self.theme_cls.primary_palette = "Orange"
         self.theme_cls.primary_hue = "400"
-        self.theme_cls.theme_style = "Dark"
+        #self.theme_cls.theme_style = "Dark"
+        self.theme_cls.theme_style = "Light"
         root = FloatLayout()
         self.sm = ScreenManager()
 
@@ -74,6 +40,16 @@ class seguricel_prototipo(MDApp):
                    )
         btn.bind(on_press=self.enviar_peticion_acceso1)
         screen_inicio.add_widget(btn)
+
+        btn2 = Button(
+                    #  color =(1, 0, .65, 1),
+                     background_normal = 'acceso_vehicular.png',
+                    #  background_down ='down.png',
+                     size_hint = (.9, .3),
+                     pos_hint = {'center_x': 0.5, 'center_y': 0.45}
+                   )
+        btn2.bind(on_press=self.enviar_peticion_acceso2)
+        screen_inicio.add_widget(btn2)
         self.sm.add_widget(screen_inicio)
 
         ################################################
@@ -142,7 +118,7 @@ class seguricel_prototipo(MDApp):
             ]
             self.menu = MDDropdownMenu(
                 items=menu_items,
-                width_mult=4,
+                width_mult=4
             )
             self.sm.current = 'datos'  
         else:
@@ -165,12 +141,30 @@ class seguricel_prototipo(MDApp):
             self.dialogo.open()
         finally:
             if contrato and usuario_id:
-                print(contrato)
-                print(usuario_id)
-                # requests.post(URL, 
-                # json={"contrato":contrato,
-                #     "acceso":"1",
-                #         "id_usuario":usuario_id})
+                # print(contrato)
+                # print(usuario_id)
+                requests.post(URL, 
+                json={"contrato":contrato,
+                    "acceso":"1",
+                    "id_usuario":usuario_id})
+    
+    def enviar_peticion_acceso2(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+        finally:
+            if contrato and usuario_id:
+                # print(contrato)
+                # print(usuario_id)
+                requests.post(URL, 
+                json={"contrato":contrato,
+                    "acceso":"2",
+                    "id_usuario":usuario_id})
 
         
 
