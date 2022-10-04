@@ -3,6 +3,7 @@ import requests
 from kivymd.app import MDApp
 from kivy.uix.button import Button
 from kivymd.uix.dialog import MDDialog
+from kivymd.font_definitions import theme_font_styles
 import helper
 from kivy.lang import Builder
 from kivymd.uix.menu import MDDropdownMenu
