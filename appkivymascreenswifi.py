@@ -9,7 +9,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.floatlayout import FloatLayout
 # from kivy.uix.screenmanager import ScreenManager, Screen
-URL='http://localhost:1010/solicitud/'
+URL='http://192.168.0.195:1010/solicitud/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
 # store.put('datos_usuario', contrato=CONTRATO, id_usuario=ID_USUARIO)
@@ -118,7 +118,8 @@ class seguricel_prototipo(MDApp):
                         json={"acceso":"1",
                             "id_usuario":usuario_id})
                 except:
-                    pass
+                    self.dialogo.text='Primero ingrese un ID valido'
+                    self.dialogo.open()
                 finally:
                     pass
     
