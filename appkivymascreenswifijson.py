@@ -9,7 +9,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.floatlayout import FloatLayout
 # from kivy.uix.screenmanager import ScreenManager, Screen
-URL='http://192.168.0.195:43157/'
+URL='http://192.168.0.195:1010/solicitud/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
 # store.put('datos_usuario', contrato=CONTRATO, id_usuario=ID_USUARIO)
@@ -112,8 +112,11 @@ class seguricel_prototipo(MDApp):
         finally:
             if usuario_id:
                 try:
-                    requests.get(url=f"{URL}seguricel_wifi_activo")
-                    requests.post(f"{URL}{usuario_id}/1/seguricel_wifi_activo")
+                    comprobar_conexion = requests.get(url=URL).json()
+                    if comprobar_conexion['conectado']:
+                        requests.post(URL, 
+                        json={"acceso":"1",
+                            "id_usuario":usuario_id})
                 except:
                     self.dialogo.text='Primero ingrese un ID valido'
                     self.dialogo.open()
@@ -130,8 +133,11 @@ class seguricel_prototipo(MDApp):
         finally:
             if usuario_id:
                 try:
-                    requests.get(url=f"{URL}seguricel_wifi_activo")
-                    requests.post(f"{URL}{usuario_id}/2/seguricel_wifi_activo")
+                    comprobar_conexion = requests.get(url=URL).json()
+                    if comprobar_conexion['conectado']:
+                        requests.post(URL, 
+                        json={"acceso":"2",
+                            "id_usuario":usuario_id})
                 except:
                     self.dialogo.text ='No se encuentra conectado a una red Seguricel'
                     self.dialogo.open()
