@@ -115,7 +115,7 @@ class seguricel_prototipo(MDApp):
                     requests.get(url=f"{URL}seguricel_wifi_activo")
                     requests.post(f"{URL}{usuario_id}/1/seguricel_wifi_activo")
                 except:
-                    self.dialogo.text='Primero ingrese un ID valido'
+                    self.dialogo.text='No se encuentra conectado a una red Seguricel'
                     self.dialogo.open()
                 finally:
                     pass
