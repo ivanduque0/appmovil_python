@@ -112,10 +112,10 @@ class seguricel_prototipo(MDApp):
         finally:
             if usuario_id:
                 try:
-                    requests.get(url=f"{URL}seguricel_wifi_activo")
-                    requests.post(f"{URL}{usuario_id}/1/seguricel_wifi_activo")
+                    requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL}{usuario_id}/1/seguricel_wifi_activo", timeout=3)
                 except:
-                    self.dialogo.text='No se encuentra conectado a una red Seguricel'
+                    self.dialogo.text='No fue posible conectar con el servidor'
                     self.dialogo.open()
                 finally:
                     pass
@@ -130,10 +130,10 @@ class seguricel_prototipo(MDApp):
         finally:
             if usuario_id:
                 try:
-                    requests.get(url=f"{URL}seguricel_wifi_activo")
-                    requests.post(f"{URL}{usuario_id}/2/seguricel_wifi_activo")
+                    requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL}{usuario_id}/2/seguricel_wifi_activo", timeout=3)
                 except:
-                    self.dialogo.text ='No se encuentra conectado a una red Seguricel'
+                    self.dialogo.text ='No fue posible conectar con el servidor'
                     self.dialogo.open()
                 finally:
                     pass
