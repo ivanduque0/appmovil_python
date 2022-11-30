@@ -110,7 +110,7 @@ class seguricel_prototipo(MDApp):
 
     def introducir_datos(self, obj):
         if self.sm.current == 'inicio':
-            contratos_http = requests.get(url=URL_CONTRATOS).json()
+            contratos_http = requests.get(url=URL_CONTRATOS,auth=('', '')).json()
             menu_items = [
                 {
                     "text": f"{contrato['nombre']}",
