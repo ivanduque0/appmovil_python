@@ -10,8 +10,8 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.floatlayout import FloatLayout
 # from kivy.uix.screenmanager import ScreenManager, Screen
-URL='https://tesis-reconocimiento-facial.herokuapp.com/apertura/'
-URL_CONTRATOS="https://tesis-reconocimiento-facial.herokuapp.com/agregarcontratosapi/"
+URL='https://seguricel.up.railway.app/mobilecontratosapi/apertura/'
+URL_CONTRATOS="https://seguricel.up.railway.app/mobilecontratosapi/"
 URL_LOCAL='http://192.168.0.195:43157/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
@@ -110,7 +110,7 @@ class seguricel_prototipo(MDApp):
 
     def introducir_datos(self, obj):
         if self.sm.current == 'inicio':
-            contratos_http = requests.get(url=URL_CONTRATOS,auth=('', '')).json()
+            contratos_http = requests.get(url=URL_CONTRATOS,auth=('mobile_access', 'S3gur1c3l_mobile@')).json()
             menu_items = [
                 {
                     "text": f"{contrato['nombre']}",
