@@ -10,7 +10,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.floatlayout import FloatLayout
 # from kivy.uix.screenmanager import ScreenManager, Screen
-URL='https://seguricel.up.railway.app/mobilecontratosapi/apertura/'
+URL='https://seguricel.up.railway.app/apertura/'
 URL_CONTRATOS="https://seguricel.up.railway.app/mobilecontratosapi/"
 URL_LOCAL='http://192.168.0.195:43157/'
 #store = DictStore('datos_usuario')
@@ -110,19 +110,23 @@ class seguricel_prototipo(MDApp):
 
     def introducir_datos(self, obj):
         if self.sm.current == 'inicio':
-            contratos_http = requests.get(url=URL_CONTRATOS,auth=('mobile_access', 'S3gur1c3l_mobile@')).json()
-            menu_items = [
-                {
-                    "text": f"{contrato['nombre']}",
-                    "viewclass": "OneLineListItem",
-                    "on_release": lambda x=f"{contrato['nombre']}": self.menu_callback(x),
-                } for contrato in contratos_http
-            ]
-            self.menu = MDDropdownMenu(
-                items=menu_items,
-                width_mult=4
-            )
-            self.sm.current = 'datos'  
+            try:
+                contratos_http = requests.get(url=URL_CONTRATOS,auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                menu_items = [
+                    {
+                        "text": f"{contrato['nombre']}",
+                        "viewclass": "OneLineListItem",
+                        "on_release": lambda x=f"{contrato['nombre']}": self.menu_callback(x),
+                    } for contrato in contratos_http
+                ]
+                self.menu = MDDropdownMenu(
+                    items=menu_items,
+                    width_mult=4
+                )
+                self.sm.current = 'datos'  
+            except:
+                self.dialogo.text='Fallo al conectar con el servidor'
+                self.dialogo.open()
         else:
             self.sm.current = 'inicio'
 
@@ -147,7 +151,7 @@ class seguricel_prototipo(MDApp):
                         requests.post(URL, 
                         json={"contrato":contrato,
                             "acceso":"1",
-                            "id_usuario":usuario_id}, timeout=3)
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -170,7 +174,7 @@ class seguricel_prototipo(MDApp):
                         requests.post(URL, 
                         json={"contrato":contrato,
                             "acceso":"2",
-                            "id_usuario":usuario_id}, timeout=3)
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
