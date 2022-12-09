@@ -35,3 +35,11 @@ MDIconButton:
     icon_size: "50sp"
     size_hint:(0.20,0.1)
 """
+
+boton_screen_inicio = """
+MDIconButton:
+    icon: "atras.png"
+    pos_hint: {'center_x': 0.13, 'center_y': 0.08}
+    icon_size: "50sp"
+    size_hint:(0.20,0.1)
+"""
