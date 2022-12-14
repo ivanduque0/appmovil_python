@@ -12,8 +12,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 # from kivy.uix.screenmanager import ScreenManager, Screen
-URL_APERTURA='https://seguricel.up.railway.app/apertura/'
-URL_CONFIG="https://seguricel.up.railway.app/dispositivosapimobile/"
+URL_APERTURA='https://webseguricel.up.railway.app/apertura/'
+URL_CONFIG="https://webseguricel.up.railway.app/dispositivosapimobile/"
 URL_LOCAL='http://192.168.0.195:43157/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
@@ -106,6 +106,23 @@ class seguricel_prototipo(MDApp):
                 btn.bind(on_press=self.enviar_peticion_acceso1)
             if acceso+1 == 2:       
                 btn.bind(on_press=self.enviar_peticion_acceso2)
+            if acceso+1 == 3:       
+                btn.bind(on_press=self.enviar_peticion_acceso3)
+            if acceso+1 == 4:       
+                btn.bind(on_press=self.enviar_peticion_acceso4)
+            if acceso+1 == 5:       
+                btn.bind(on_press=self.enviar_peticion_acceso5)
+            if acceso+1 == 6:       
+                btn.bind(on_press=self.enviar_peticion_acceso6)
+            if acceso+1 == 7:       
+                btn.bind(on_press=self.enviar_peticion_acceso7)
+            if acceso+1 == 8:       
+                btn.bind(on_press=self.enviar_peticion_acceso8)
+            if acceso+1 == 9:       
+                btn.bind(on_press=self.enviar_peticion_acceso9)
+            if acceso+1 == 10:       
+                btn.bind(on_press=self.enviar_peticion_acceso10)
+            
             if 'entrada' in descripcion_peatonal[acceso].lower():
                 btn.color = (0, 1, 0, 1)
                 self.layout_entradas.add_widget(btn)
@@ -124,11 +141,28 @@ class seguricel_prototipo(MDApp):
                         #size_hint = (.9, .3),
                         #pos_hint = {'center_x': 0.5, 'center_y': 0.45}
                     )
-            if acceso+3 == 3:       
-                btn2.bind(on_press=self.enviar_peticion_acceso3)
-            if acceso+3 == 4:       
-                btn2.bind(on_press=self.enviar_peticion_acceso4)
+            if acceso+10 == 11:       
+                btn2.bind(on_press=self.enviar_peticion_acceso11)
+            if acceso+10 == 12:       
+                btn2.bind(on_press=self.enviar_peticion_acceso12)
+            if acceso+10 == 13:       
+                btn2.bind(on_press=self.enviar_peticion_acceso13)
+            if acceso+10 == 14:       
+                btn2.bind(on_press=self.enviar_peticion_acceso14)
+            if acceso+10 == 15:       
+                btn2.bind(on_press=self.enviar_peticion_acceso15)
+            if acceso+10 == 16:       
+                btn2.bind(on_press=self.enviar_peticion_acceso16)
+            if acceso+10 == 17:       
+                btn2.bind(on_press=self.enviar_peticion_acceso17)
+            if acceso+10 == 18:       
+                btn2.bind(on_press=self.enviar_peticion_acceso18)
+            if acceso+10 == 19:       
+                btn2.bind(on_press=self.enviar_peticion_acceso19)
+            if acceso+10 == 20:       
+                btn2.bind(on_press=self.enviar_peticion_acceso20)
             
+
             if 'entrada' in descripcion_peatonal[acceso].lower():
                 btn2.color = (0, 1, 0, 1)
                 self.layout_entradas.add_widget(btn2)
@@ -208,7 +242,7 @@ class seguricel_prototipo(MDApp):
                 accesos_http = requests.post(url=f"{URL_CONFIG}{self.id_usuario.text}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                 #print(accesos_http)
                 for dispositivo in accesos_http:
-                    if 'peatonal' in dispositivo['descripcion'].lower():
+                    if 'peatonal' in dispositivo['descripcion'].lower() and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
                         accesosPeatonales=accesosPeatonales+1
                         descripcion=dispositivo['descripcion']
                         #print(descripcion)
@@ -219,7 +253,7 @@ class seguricel_prototipo(MDApp):
                                 break
                         if contrato == '':
                             contrato= dispositivo['contrato']
-                    elif 'vehicular' in dispositivo['descripcion'].lower():
+                    elif 'vehicular' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()):
                         accesosVehiculares=accesosVehiculares+1
                         descripcion=dispositivo['descripcion']
                         #print(descripcion)
@@ -414,6 +448,426 @@ class seguricel_prototipo(MDApp):
             
                 # print(contrato)
                 # print(usuario_id)
+
+    def enviar_peticion_acceso5(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/5/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"5",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+
+    def enviar_peticion_acceso6(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/6/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"6",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso7(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/7/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"7",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso8(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/8/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"8",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso9(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/9/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"9",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso10(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/10/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"10",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso11(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/11/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"11",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso12(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/12/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"12",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso13(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/13/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"13",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso14(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/14/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"14",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso15(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/15/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"15",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso16(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/16/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"16",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso17(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/17/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"17",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso18(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/18/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"18",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso19(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/19/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"19",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+    
+    def enviar_peticion_acceso20(self, obj):
+        contrato=''
+        usuario_id=''
+        try:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            if contrato and usuario_id:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{URL_LOCAL}{usuario_id}/20/seguricel_wifi_activo", timeout=3)
+                except:
+                    try:
+                        requests.post(URL_APERTURA, 
+                        json={"contrato":contrato,
+                            "acceso":"20",
+                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+        except:
+            self.dialogo.text='Primero seleccione un contrato e ingrese un ID valido'
+            self.dialogo.open()
+            
+                # print(contrato)
+                # print(usuario_id)
+
+    
+    
+
                 
 if __name__ == "__main__":
     app = seguricel_prototipo()
