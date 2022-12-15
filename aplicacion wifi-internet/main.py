@@ -263,12 +263,6 @@ class seguricel_prototipo(MDApp):
 
     def cambiar_entradas(self, instance):
         self.sm.current = 'entradas'
-    
-    def cambiar_salidas(self, instance):
-        self.sm.current = 'salidas'
-
-    def volver_inicio(self, instance):
-        self.sm.current = 'inicio'
         self.layout_entradas.clear_widgets()
         self.layout_salidas.clear_widgets()
         try:
@@ -400,6 +394,143 @@ class seguricel_prototipo(MDApp):
                     self.layout_salidas.add_widget(btn2) 
         except TypeError:
             pass
+    
+    def cambiar_salidas(self, instance):
+        self.sm.current = 'salidas'
+        self.layout_entradas.clear_widgets()
+        self.layout_salidas.clear_widgets()
+        try:
+            peatonales = store.get('accesos')['peatonales']
+            vehiculares = store.get('accesos')['vehiculares']
+            self.id_usuario_cargar = store.get('datos_usuario')['id_usuario']
+            window_sizes=Window.size
+            self.tamano_x=window_sizes[0]*0.9
+            self.tamano_y=self.tamano_x*180/300
+        except:
+            pass
+        try:
+            for acceso in peatonales:
+                listaPalabras = peatonales[acceso].split(" ")
+                descripcionLista = ""
+                descripcionPrueba = ""
+                for indicePalabra in range(len(listaPalabras)):
+                    descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
+                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                        descripcionLista = listaPalabras[indicePalabra]
+
+                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                        descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
+
+                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                        descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
+                    
+                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                        descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
+                btn = Button(
+                            color =(1, 0, 0, 1),
+                            text=descripcionLista,
+                            halign='center',
+                            #background_normal = 'acceso_principal.png',
+                            #  background_down ='down.png',
+                            size_hint = (None, None),
+                            #width=1000,
+                            #size_hint=(None, None),
+                            #pos_hint = {'center_x': 0.5, 'center_y': 0.8},
+                            font_size = self.fontSizeAccesos,
+                            size=(self.tamano_x, self.tamano_y)
+                            #color=(206 / 255, 203 / 255, 203 / 255, 1),
+                        )
+                if int(acceso) == 1: 
+                    btn.bind(on_press=self.enviar_peticion_acceso1)
+                if int(acceso) == 2:       
+                    btn.bind(on_press=self.enviar_peticion_acceso2)
+                if int(acceso) == 3:       
+                    btn.bind(on_press=self.enviar_peticion_acceso3)
+                if int(acceso) == 4:       
+                    btn.bind(on_press=self.enviar_peticion_acceso4)
+                if int(acceso) == 5:       
+                    btn.bind(on_press=self.enviar_peticion_acceso5)
+                if int(acceso) == 6:       
+                    btn.bind(on_press=self.enviar_peticion_acceso6)
+                if int(acceso) == 7:       
+                    btn.bind(on_press=self.enviar_peticion_acceso7)
+                if int(acceso) == 8:       
+                    btn.bind(on_press=self.enviar_peticion_acceso8)
+                if int(acceso) == 9:       
+                    btn.bind(on_press=self.enviar_peticion_acceso9)
+                if int(acceso) == 10:       
+                    btn.bind(on_press=self.enviar_peticion_acceso10)
+                
+                if 'entrada' in peatonales[acceso].lower():
+                    btn.color = (0, 1, 0, 1)
+                    self.layout_entradas.add_widget(btn)
+                else:
+                    self.layout_salidas.add_widget(btn) 
+        except TypeError:
+            pass
+
+        try:
+            for acceso in vehiculares:
+                listaPalabras = vehiculares[acceso].split(" ")
+                descripcionLista = ""
+                descripcionPrueba = ""
+                for indicePalabra in range(len(listaPalabras)):
+                    descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
+                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                        descripcionLista = listaPalabras[indicePalabra]
+
+                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                        descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
+
+                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                        descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
+                    
+                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                        descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
+                btn2 = Button(
+                            color =(1, 0, 0, 1),
+                            text=descripcionLista,
+                            halign='center',
+                            #background_normal = 'acceso_vehicular.png',
+                            #  background_down ='down.png',
+                            size_hint=(None, None),
+                            size=(self.tamano_x, self.tamano_y),
+                            font_size = self.fontSizeAccesos,
+                            #size_hint = (.9, .3),
+                            #pos_hint = {'center_x': 0.5, 'center_y': 0.45}
+                        )
+                if int(acceso) == 11:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso11)
+                if int(acceso) == 12:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso12)
+                if int(acceso) == 13:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso13)
+                if int(acceso) == 14:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso14)
+                if int(acceso) == 15:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso15)
+                if int(acceso) == 16:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso16)
+                if int(acceso) == 17:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso17)
+                if int(acceso) == 18:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso18)
+                if int(acceso) == 19:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso19)
+                if int(acceso) == 20:       
+                    btn2.bind(on_press=self.enviar_peticion_acceso20)
+                
+
+                if 'entrada' in vehiculares[acceso].lower():
+                    btn2.color = (0, 1, 0, 1)
+                    self.layout_entradas.add_widget(btn2)
+                else:
+                    self.layout_salidas.add_widget(btn2) 
+        except TypeError:
+            pass
+
+    def volver_inicio(self, instance):
+        self.sm.current = 'inicio'
 
 
     def guardar_usuario(self, instance):
