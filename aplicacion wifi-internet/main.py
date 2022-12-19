@@ -27,7 +27,7 @@ class seguricel_prototipo(MDApp):
 
     def build(self):
         window_sizes=Window.size
-        self.fontSizeAccesos =28
+        self.fontSizeAccesos ="35sp"
         peatonales=0
         vehiculares=0
         self.id_usuario_cargar=""
@@ -53,7 +53,7 @@ class seguricel_prototipo(MDApp):
                      size_hint = (.9, .3),
                      pos_hint = {'center_x': 0.5, 'center_y': 0.8},
                      text='ENTRAR',
-                     font_size = 35,
+                     font_size = "50sp",
                    )
         btn3.bind(on_press=self.cambiar_entradas)
         self.screen_inicio.add_widget(btn3)
@@ -65,7 +65,7 @@ class seguricel_prototipo(MDApp):
                      size_hint = (.9, .3),
                      pos_hint = {'center_x': 0.5, 'center_y': 0.45},
                      text='SALIR',
-                     font_size = 35,
+                     font_size = "50sp",
                    )
         btn4.bind(on_press=self.cambiar_salidas)
         self.screen_inicio.add_widget(btn4)
@@ -743,6 +743,8 @@ class seguricel_prototipo(MDApp):
     def introducir_datos(self, obj):
         if self.sm.current == 'inicio' or not self.id_usuario_cargar:
             self.sm.current = 'datos'  
+        elif self.sm.current == 'entradas' or self.sm.current == 'salidas' :
+            self.sm.current = 'datos' 
         else:
             self.sm.current = 'inicio'
 
