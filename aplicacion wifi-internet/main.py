@@ -11,7 +11,9 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
 from kivy.core.window import Window
+from kivymd.uix.selectioncontrol import MDSwitch
 # from kivy.uix.screenmanager import ScreenManager, Screen
 URL_APERTURA='https://webseguricel.up.railway.app/apertura/'
 URL_CONFIG="https://webseguricel.up.railway.app/dispositivosapimobile/"
@@ -243,7 +245,25 @@ class seguricel_prototipo(MDApp):
                      size_hint=(0.7,0.3),
                      buttons=[self.cerrar_dialogo])
         screen = Screen(name='datos')
-
+        textoModoInternet = Label(
+            text="Aperturas con internet",
+            #halign="center",
+            pos_hint={'center_x': 0.5, 'center_y': 0.25},
+            font_size="20sp"
+        )
+        
+        try:
+            modoGuardado = store.get('cambiar_modo')['modoInternet']
+        except KeyError:
+            store.put('cambiar_modo', modoInternet=False)
+            modoGuardado = store.get('cambiar_modo')['modoInternet']
+        modoAperturaInternet = MDSwitch(
+            pos_hint={'center_x': 0.5, 'center_y': 0.2},
+            active=modoGuardado,
+        )
+        modoAperturaInternet.bind(active=self.cambiar_modo)
+        screen.add_widget(textoModoInternet)
+        screen.add_widget(modoAperturaInternet)
         boton_guardar = Builder.load_string(helper.guardar_button)
         boton_guardar.bind(on_press=self.guardar_usuario)
         screen.add_widget(boton_guardar)
@@ -260,6 +280,9 @@ class seguricel_prototipo(MDApp):
         # else:
         #     self.id_usuario.text = self.id_usuario_cargar
         return root
+
+    def cambiar_modo(self, instance, value):
+        store.put('cambiar_modo', modoInternet=value)
 
     def cambiar_entradas(self, instance):
         self.sm.current = 'entradas'
@@ -736,12 +759,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
-
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/1/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/1/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -760,11 +787,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/2/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/2/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -786,11 +818,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/3/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/3/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -812,11 +849,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/4/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/4/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -838,11 +880,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/5/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/5/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -864,11 +911,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/6/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/6/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -890,11 +942,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/7/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/7/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -916,11 +973,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/8/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/8/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -942,11 +1004,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/9/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/9/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -968,11 +1035,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/10/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/10/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -994,11 +1066,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/11/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/11/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1020,11 +1097,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/12/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/12/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1046,11 +1128,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/13/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/13/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1072,11 +1159,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/14/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/14/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1098,11 +1190,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/15/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/15/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1124,11 +1221,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/16/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/16/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1150,11 +1252,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/17/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/17/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1176,11 +1283,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/18/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/18/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1202,11 +1314,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/19/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/19/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
@@ -1228,11 +1345,16 @@ class seguricel_prototipo(MDApp):
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
             if contrato and usuario_id:
-                try:
-                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                    requests.post(url=f"{URL_LOCAL}{usuario_id}/20/seguricel_wifi_activo", timeout=3)
-                except:
+                if not modoInternet:
+                    try:
+                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{URL_LOCAL}{usuario_id}/20/seguricel_wifi_activo", timeout=3)
+                    except:
+                        self.dialogo.text='No fue posible enviar la peticion'
+                        self.dialogo.open()
+                else:
                     try:
                         requests.post(URL_APERTURA, 
                         json={"contrato":contrato,
