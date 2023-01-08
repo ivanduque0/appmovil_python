@@ -15,6 +15,7 @@ from kivy.uix.label import Label
 from kivymd.uix.menu import MDDropdownMenu
 from kivy.core.window import Window
 from kivymd.uix.selectioncontrol import MDSwitch
+from jnius import autoclass
 # from kivy.uix.screenmanager import ScreenManager, Screen
 URL_APERTURA='https://webseguricel.up.railway.app/apertura/'
 URL_CONFIG="https://webseguricel.up.railway.app/dispositivosapimobile/"
@@ -105,7 +106,6 @@ class seguricel_prototipo(MDApp):
             self.id_usuario_cargar = store.get('datos_usuario')['id_usuario']
             self.tamano_x=window_sizes[0]*0.9
             self.tamano_y=self.tamano_x*180/300
-
         except:
             pass
         try:
@@ -305,10 +305,24 @@ class seguricel_prototipo(MDApp):
         root.add_widget(boton_datos_screen)
         if not self.id_usuario_cargar:
             self.sm.current = 'datos'
+        else:
+            self.startServicioFeedback(self.id_usuario_cargar)
         # else:
         #     self.id_usuario.text = self.id_usuario_cargar
         return root
 
+    def startServicioFeedback(self, argumentt):
+        service = autoclass('org.test.seguricelApp.ServiceFeedback')
+        mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+        argument=argumentt
+        print(f"ARGUMENTO SERVICIO: {argument}")
+        service.start(mActivity, argument)
+
+    def stopServicioFeedback(self):
+        service = autoclass('org.test.seguricelApp.ServiceFeedback')
+        mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+        service.stop(mActivity)
+        
     def menu_callback(self, text_item):
         self.contrato_seleccionado = text_item
         self.lista.set_item(text_item)
@@ -782,7 +796,6 @@ class seguricel_prototipo(MDApp):
                     self.screen.remove_widget(self.lista)
                 for contrato in contratos_http:
                     contratos.append(contrato['contrato'])
-                store.put('contratos', contratos=contratos)
                 if contratos:
                     contrato=contratos[0]
                     accesos_http = requests.post(url=f"{URL_CONFIG}{contrato}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
@@ -810,8 +823,14 @@ class seguricel_prototipo(MDApp):
                                     break
                 # print(accesosPeatonales)
                 # print(accesosVehiculares)
+                try:
+                    self.stopServicioFeedback()
+                except:
+                    pass
+                store.put('contratos', contratos=contratos)
                 store.put('datos_usuario', contrato=contrato, id_usuario=self.id_usuario.text)
                 store.put('accesos', vehiculares=accesosVehicularesConDescripcion,peatonales=accesosPeatonalesConDescripcion)
+                self.startServicioFeedback(self.id_usuario.text)
                 #store.put('nombre_accesos', vehiculares=descripcion_vehicular,peatonales=descripcion_peatonal)
                 #accesos=store.get('accesos')
                 #print(accesos)
