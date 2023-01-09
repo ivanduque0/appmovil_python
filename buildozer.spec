@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3, plyer, kivy, kivymd, pyjnius, pillow, requests, openssl, urllib3, chardet, idna
+requirements = python3, kivy, kivymd, pillow, requests, openssl, urllib3, chardet, idna
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -54,7 +54,7 @@ orientation = portrait
 
 # (list) List of service to declare
 #services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
-services = Feedback:feedbackservice.py:foreground
+#services = Feedback:feedbackservice.py:foreground
 #
 # OSX Specific
 #
