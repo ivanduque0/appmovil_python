@@ -1,5 +1,7 @@
 from kivy.storage.jsonstore import JsonStore
 import requests
+import threading
+from kivy.clock import Clock, mainthread
 from kivymd.app import MDApp
 from kivy.uix.button import Button
 from kivymd.uix.dialog import MDDialog
@@ -15,9 +17,11 @@ from kivy.uix.label import Label
 from kivymd.uix.menu import MDDropdownMenu
 from kivy.core.window import Window
 from kivymd.uix.selectioncontrol import MDSwitch
-from jnius import autoclass
+#from jnius import autoclass
 # from kivy.uix.screenmanager import ScreenManager, Screen
+
 URL_APERTURA='https://webseguricel.up.railway.app/apertura/'
+URL_APERTURAS="https://webseguricel.up.railway.app/aperturasusuarioapi/"
 URL_CONFIG="https://webseguricel.up.railway.app/dispositivosapimobile/"
 URL_LOCAL='http://192.168.0.195:43157/'
 #store = DictStore('datos_usuario')
@@ -306,22 +310,51 @@ class seguricel_prototipo(MDApp):
         if not self.id_usuario_cargar:
             self.sm.current = 'datos'
         else:
-            self.startServicioFeedback(self.id_usuario_cargar)
+            threading.Thread(target=self.feedbacks).start()
+            #self.startServicioFeedback(self.id_usuario_cargar)
         # else:
-        #     self.id_usuario.text = self.id_usuario_cargar
+        #     self.id_usuario.text = 
+        
         return root
 
-    def startServicioFeedback(self, argumentt):
-        service = autoclass('org.test.seguricelApp.ServiceFeedback')
-        mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
-        argument=argumentt
-        print(f"ARGUMENTO SERVICIO: {argument}")
-        service.start(mActivity, argument)
+    @mainthread
+    def dialogo_feedback(self):
+        self.dialogo.title='¡AVISO!'
+        self.dialogo.text='PETICION RECIBIDA POR EL MODULO, ABRIENDO ACCESO'
+        self.dialogo.open()
 
-    def stopServicioFeedback(self):
-        service = autoclass('org.test.seguricelApp.ServiceFeedback')
-        mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
-        service.stop(mActivity)
+    def feedbacks(self):
+        idd = store.get('datos_usuario')['id_usuario']
+        aperturasjson = requests.get(url=f"{URL_APERTURAS}{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+        cantidadAperturas = len(aperturasjson)
+        feedbacksProcesados=0
+        while cantidadAperturas>feedbacksProcesados:
+            try:
+                feedbacksProcesados=0
+                aperturasjson = requests.get(url=f"{URL_APERTURAS}{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                for apertura in aperturasjson:
+                    #print(apertura['abriendo'])
+                    #print(apertura['feedback'])
+                    if apertura['abriendo'] and not apertura['feedback']:
+                        requests.put(url=f"{URL_APERTURAS}{apertura['id']}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5)
+                        self.dialogo_feedback()
+                        #print("FEEDBACK ENVIADO!")
+                    elif apertura['abriendo'] and apertura['feedback']:
+                        feedbacksProcesados+=1
+            except Exception as e:
+                print(f'{e} - fallo en feedback')
+    
+    # def startServicioFeedback(self, argumentt):
+        # service = autoclass('org.test.seguricelApp.ServiceFeedback')
+        # mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+        # argument=argumentt
+        # print(f"ARGUMENTO SERVICIO: {argument}")
+        # service.start(mActivity, argument)
+
+    # def stopServicioFeedback(self):
+        # service = autoclass('org.test.seguricelApp.ServiceFeedback')
+        # mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
+        # service.stop(mActivity)
         
     def menu_callback(self, text_item):
         self.contrato_seleccionado = text_item
@@ -823,14 +856,15 @@ class seguricel_prototipo(MDApp):
                                     break
                 # print(accesosPeatonales)
                 # print(accesosVehiculares)
-                try:
-                    self.stopServicioFeedback()
-                except:
-                    pass
+                # try:
+                    # self.stopServicioFeedback()
+                # except:
+                    # pass
                 store.put('contratos', contratos=contratos)
                 store.put('datos_usuario', contrato=contrato, id_usuario=self.id_usuario.text)
                 store.put('accesos', vehiculares=accesosVehicularesConDescripcion,peatonales=accesosPeatonalesConDescripcion)
-                self.startServicioFeedback(self.id_usuario.text)
+                threading.Thread(target=self.feedbacks).start()
+                #self.startServicioFeedback(self.id_usuario.text)
                 #store.put('nombre_accesos', vehiculares=descripcion_vehicular,peatonales=descripcion_peatonal)
                 #accesos=store.get('accesos')
                 #print(accesos)
@@ -1021,6 +1055,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"1",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1049,6 +1084,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"2",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1080,6 +1116,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"3",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1111,6 +1148,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"4",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1142,6 +1180,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"5",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1173,6 +1212,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"6",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1204,6 +1244,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"7",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1235,6 +1276,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"8",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1266,6 +1308,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"9",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1297,6 +1340,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"10",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1328,6 +1372,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"11",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1359,6 +1404,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"12",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1390,6 +1436,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"13",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1421,6 +1468,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"14",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1452,6 +1500,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"15",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1483,6 +1532,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"16",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1514,6 +1564,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"17",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1545,6 +1596,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"18",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1576,6 +1628,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"19",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1607,6 +1660,7 @@ class seguricel_prototipo(MDApp):
                         json={"contrato":contrato,
                             "acceso":"20",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                        threading.Thread(target=self.feedbacks).start()
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
