@@ -23,7 +23,7 @@ from kivymd.uix.selectioncontrol import MDSwitch
 URL_APERTURA='https://webseguricel.up.railway.app/apertura/'
 URL_APERTURAS="https://webseguricel.up.railway.app/aperturasusuarioapi/"
 URL_CONFIG="https://webseguricel.up.railway.app/dispositivosapimobile/"
-URL_LOCAL='http://192.168.0.195:43157/'
+#URL_LOCAL='http://192.168.0.195:43157/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
 
@@ -107,6 +107,7 @@ class seguricel_prototipo(MDApp):
         try:
             peatonales = store.get('accesos')['peatonales']
             vehiculares = store.get('accesos')['vehiculares']
+            self.servidorLocal=store.get('servidor')['servidor']
             self.id_usuario_cargar = store.get('datos_usuario')['id_usuario']
             self.tamano_x=window_sizes[0]*0.9
             self.tamano_y=self.tamano_x*180/300
@@ -367,26 +368,30 @@ class seguricel_prototipo(MDApp):
             try:
                 accesos_http = requests.post(url=f"{URL_CONFIG}{self.contrato_seleccionado}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                 for dispositivo in accesos_http:
-                    if 'peatonal' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
-                        #accesosPeatonales=accesosPeatonales+1
-                        descripcion=dispositivo['descripcion']
-                        acceso=int(dispositivo['acceso'])
-                        #print(descripcion)
-                        for letra in descripcion:
-                            if letra == '(':
-                                index = descripcion.index('(')
-                                accesosPeatonalesConDescripcion[acceso]=descripcion[:index]
-                                break
-                    elif 'vehicular' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
-                        
-                        descripcion=dispositivo['descripcion']
-                        acceso=int(dispositivo['acceso'])
-                        #print(descripcion)
-                        for letra in descripcion:
-                            if letra == '(':
-                                index = descripcion.index('(')
-                                accesosVehicularesConDescripcion[acceso]=descripcion[:index]
-                                break
+                    if dispositivo['descripcion'] == 'SERVIDOR LOCAL':
+                        store.put('servidor', servidor=dispositivo['dispositivo'])
+                        self.servidorLocal=dispositivo['dispositivo']
+                    else:
+                        if 'peatonal' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
+                            #accesosPeatonales=accesosPeatonales+1
+                            descripcion=dispositivo['descripcion']
+                            acceso=int(dispositivo['acceso'])
+                            #print(descripcion)
+                            for letra in descripcion:
+                                if letra == '(':
+                                    index = descripcion.index('(')
+                                    accesosPeatonalesConDescripcion[acceso]=descripcion[:index]
+                                    break
+                        elif 'vehicular' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
+                            
+                            descripcion=dispositivo['descripcion']
+                            acceso=int(dispositivo['acceso'])
+                            #print(descripcion)
+                            for letra in descripcion:
+                                if letra == '(':
+                                    index = descripcion.index('(')
+                                    accesosVehicularesConDescripcion[acceso]=descripcion[:index]
+                                    break
                 # print(accesosPeatonales)
                 # print(accesosVehiculares)
                 store.put('datos_usuario', contrato=self.contrato_seleccionado, id_usuario=id_usuario_antiguo)
@@ -834,26 +839,30 @@ class seguricel_prototipo(MDApp):
                     accesos_http = requests.post(url=f"{URL_CONFIG}{contrato}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                     #print(accesos_http)
                     for dispositivo in accesos_http:
-                        if 'peatonal' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
-                            #accesosPeatonales=accesosPeatonales+1
-                            descripcion=dispositivo['descripcion']
-                            acceso=int(dispositivo['acceso'])
-                            #print(descripcion)
-                            for letra in descripcion:
-                                if letra == '(':
-                                    index = descripcion.index('(')
-                                    accesosPeatonalesConDescripcion[acceso]=descripcion[:index]
-                                    break
-                        elif 'vehicular' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
-                        
-                            descripcion=dispositivo['descripcion']
-                            acceso=int(dispositivo['acceso'])
-                            #print(descripcion)
-                            for letra in descripcion:
-                                if letra == '(':
-                                    index = descripcion.index('(')
-                                    accesosVehicularesConDescripcion[acceso]=descripcion[:index]
-                                    break
+                        if dispositivo['descripcion'] == 'SERVIDOR LOCAL':
+                            store.put('servidor', servidor=dispositivo['dispositivo'])
+                            self.servidorLocal=dispositivo['dispositivo']
+                        else:
+                            if 'peatonal' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
+                                #accesosPeatonales=accesosPeatonales+1
+                                descripcion=dispositivo['descripcion']
+                                acceso=int(dispositivo['acceso'])
+                                #print(descripcion)
+                                for letra in descripcion:
+                                    if letra == '(':
+                                        index = descripcion.index('(')
+                                        accesosPeatonalesConDescripcion[acceso]=descripcion[:index]
+                                        break
+                            elif 'vehicular' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
+                            
+                                descripcion=dispositivo['descripcion']
+                                acceso=int(dispositivo['acceso'])
+                                #print(descripcion)
+                                for letra in descripcion:
+                                    if letra == '(':
+                                        index = descripcion.index('(')
+                                        accesosVehicularesConDescripcion[acceso]=descripcion[:index]
+                                        break
                 # print(accesosPeatonales)
                 # print(accesosVehiculares)
                 # try:
@@ -1045,7 +1054,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/1/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/1/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1074,7 +1083,8 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/2/seguricel_wifi_activo", timeout=3)
+                        print(self.servidorLocal)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/2/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1106,7 +1116,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/3/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/3/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1138,7 +1148,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/4/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/4/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1170,7 +1180,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/5/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/5/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1202,7 +1212,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/6/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/6/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1234,7 +1244,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/7/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/7/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1266,7 +1276,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/8/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/8/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1298,7 +1308,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/9/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/9/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1330,7 +1340,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/10/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/10/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1362,7 +1372,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/11/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/11/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1394,7 +1404,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/12/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/12/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1426,7 +1436,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/13/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/13/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1458,7 +1468,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/14/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/14/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1490,7 +1500,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/15/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/15/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1522,7 +1532,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/16/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/16/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1554,7 +1564,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/17/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/17/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1586,7 +1596,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/18/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/18/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1618,7 +1628,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/19/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/19/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
@@ -1650,7 +1660,7 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{URL_LOCAL}{usuario_id}/20/seguricel_wifi_activo", timeout=3)
+                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/20/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
