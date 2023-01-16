@@ -17,6 +17,9 @@ from kivy.uix.label import Label
 from kivymd.uix.menu import MDDropdownMenu
 from kivy.core.window import Window
 from kivymd.uix.selectioncontrol import MDSwitch
+# from plyer import wifi
+from kivy.uix.popup import Popup
+import time
 #from jnius import autoclass
 # from kivy.uix.screenmanager import ScreenManager, Screen
 
@@ -33,7 +36,7 @@ class seguricel_prototipo(MDApp):
 
     def build(self):
         window_sizes=Window.size
-        self.fontSizeAccesos ="35sp"
+        self.fontSizeAccesos ="30sp"
         peatonales=0
         vehiculares=0
         self.id_usuario_cargar=""
@@ -51,7 +54,7 @@ class seguricel_prototipo(MDApp):
         self.screen_inicio = Screen(name='inicio')
         self.screen_entradas = Screen(name='entradas')
         self.screen_salidas = Screen(name='salidas')
-
+        self.screen_espera = Screen(name='espera')
         btn3 = Button(
                     #  color =(1, 0, .65, 1),
                     #background_normal = 'acceso_principal.png',
@@ -78,6 +81,7 @@ class seguricel_prototipo(MDApp):
         self.sm.add_widget(self.screen_inicio)
         self.sm.add_widget(self.screen_entradas)
         self.sm.add_widget(self.screen_salidas)
+        self.sm.add_widget(self.screen_espera)
 
         #screen_inicio.add_widget(boton_datos_screen)
         self.layout_entradas = GridLayout(cols=1, spacing=30, size_hint=(None,None))
@@ -120,16 +124,16 @@ class seguricel_prototipo(MDApp):
                 descripcionPrueba = ""
                 for indicePalabra in range(len(listaPalabras)):
                     descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                         descripcionLista = listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                         descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                    if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     
-                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                    if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                 btn = Button(
                             color =(1, 0, 0, 1),
@@ -180,16 +184,16 @@ class seguricel_prototipo(MDApp):
                 descripcionPrueba = ""
                 for indicePalabra in range(len(listaPalabras)):
                     descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                         descripcionLista = listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                         descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                    if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     
-                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                    if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                 btn2 = Button(
                             color =(1, 0, 0, 1),
@@ -324,6 +328,29 @@ class seguricel_prototipo(MDApp):
         self.dialogo.text='PETICION RECIBIDA POR EL MODULO, ABRIENDO ACCESO'
         self.dialogo.open()
 
+    @mainthread
+    def popUpEspera(self, titulo, contenido):
+        self.mensajePopUp = Popup(
+            title=titulo,
+            content=Label(text=contenido),
+            size_hint=(.9, .6),
+            auto_dismiss=False,
+            title_align='center',
+            title_size= '50sp',
+        )
+        self.mensajePopUp.open()
+        #return mensajePopUp
+
+    @mainthread
+    def cerrarPopUPEspera(self):
+        self.mensajePopUp.dismiss()
+        self.sm.current = 'inicio'
+    
+    def popUpAperturaEsperar(self):
+        self.popUpEspera('Procesando\nPeticion', 'Por favor espere mientras\nse procesa la peticion')
+        time.sleep(3)
+        self.cerrarPopUPEspera()
+        
     def feedbacks(self):
         idd = store.get('datos_usuario')['id_usuario']
         aperturasjson = requests.get(url=f"{URL_APERTURAS}{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
@@ -345,6 +372,21 @@ class seguricel_prototipo(MDApp):
             except Exception as e:
                 print(f'{e} - fallo en feedback')
     
+    # def conectarWifi(self):
+    #     param = {}
+    #     param['password'] = 'S3gur1c3l753'
+    #     wifi.connect('Seguricel', param)
+
+    #     # self.root.add_widget(Popup(
+    #     #     title='xd',
+    #     #     content=Label(text='alavergaxd'),
+    #     #     size_hint=(.8, 1),
+    #     #     auto_dismiss=True
+    #     # ))
+
+
+
+
     # def startServicioFeedback(self, argumentt):
         # service = autoclass('org.test.seguricelApp.ServiceFeedback')
         # mActivity = autoclass('org.kivy.android.PythonActivity').mActivity
@@ -408,16 +450,16 @@ class seguricel_prototipo(MDApp):
                     descripcionPrueba = ""
                     for indicePalabra in range(len(listaPalabras)):
                         descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                             descripcionLista = listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                             descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                        if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                         
-                        if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                        if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     btn = Button(
                                 color =(1, 0, 0, 1),
@@ -469,16 +511,16 @@ class seguricel_prototipo(MDApp):
                     descripcionPrueba = ""
                     for indicePalabra in range(len(listaPalabras)):
                         descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                             descripcionLista = listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                             descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                        if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                         
-                        if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                        if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     btn2 = Button(
                                 #  color =(1, 0, .65, 1),
@@ -557,16 +599,16 @@ class seguricel_prototipo(MDApp):
                 descripcionPrueba = ""
                 for indicePalabra in range(len(listaPalabras)):
                     descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                         descripcionLista = listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                         descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                    if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     
-                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                    if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                 btn = Button(
                             color =(1, 0, 0, 1),
@@ -618,16 +660,16 @@ class seguricel_prototipo(MDApp):
                 descripcionPrueba = ""
                 for indicePalabra in range(len(listaPalabras)):
                     descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                         descripcionLista = listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                         descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                    if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     
-                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                    if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                 btn2 = Button(
                             color =(1, 0, 0, 1),
@@ -691,16 +733,16 @@ class seguricel_prototipo(MDApp):
                 descripcionPrueba = ""
                 for indicePalabra in range(len(listaPalabras)):
                     descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                         descripcionLista = listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                         descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                    if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     
-                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                    if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                 btn = Button(
                             color =(1, 0, 0, 1),
@@ -752,16 +794,16 @@ class seguricel_prototipo(MDApp):
                 descripcionPrueba = ""
                 for indicePalabra in range(len(listaPalabras)):
                     descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                         descripcionLista = listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                    if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                         descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                    if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                    if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     
-                    if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                    if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                         descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                 btn2 = Button(
                             color =(1, 0, 0, 1),
@@ -886,16 +928,16 @@ class seguricel_prototipo(MDApp):
                     descripcionPrueba = ""
                     for indicePalabra in range(len(listaPalabras)):
                         descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                             descripcionLista = listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                             descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                        if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                         
-                        if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                        if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     btn = Button(
                                 color =(1, 0, 0, 1),
@@ -947,16 +989,16 @@ class seguricel_prototipo(MDApp):
                     descripcionPrueba = ""
                     for indicePalabra in range(len(listaPalabras)):
                         descripcionPrueba = descripcionLista + listaPalabras[indicePalabra]
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra == 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra == 0:
                             descripcionLista = listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 < 1 and indicePalabra != 0:
+                        if len(descripcionPrueba) / 10 < 1 and indicePalabra != 0:
                             descripcionLista = descripcionLista + " " + listaPalabras[indicePalabra]
 
-                        if len(descripcionPrueba) / 20 >= 1 and len(descripcionPrueba) / 20 < 2:
+                        if len(descripcionPrueba) / 10 >= 1 and len(descripcionPrueba) / 10 < 2:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                         
-                        if len(descripcionPrueba) / 20 >= 2 and len(descripcionPrueba) / 20 < 3:
+                        if len(descripcionPrueba) / 10 >= 2 and len(descripcionPrueba) / 10 < 3:
                             descripcionLista = descripcionLista + "\n" + listaPalabras[indicePalabra]
                     btn2 = Button(
                                 #  color =(1, 0, .65, 1),
@@ -1046,6 +1088,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso1(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1075,6 +1119,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso2(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1108,6 +1154,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso3(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1140,6 +1188,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso4(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1172,6 +1222,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso5(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1204,6 +1256,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso6(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1236,6 +1290,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso7(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1268,6 +1324,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso8(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1300,6 +1358,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso9(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1332,6 +1392,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso10(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1364,6 +1426,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso11(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1396,6 +1460,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso12(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1428,6 +1494,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso13(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1460,6 +1528,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso14(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1492,6 +1562,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso15(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1524,6 +1596,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso16(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1556,6 +1630,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso17(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1588,6 +1664,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso18(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1620,6 +1698,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso19(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
@@ -1652,6 +1732,8 @@ class seguricel_prototipo(MDApp):
     def enviar_peticion_acceso20(self, obj):
         contrato=''
         usuario_id=''
+        threading.Thread(target=self.popUpAperturaEsperar).start()
+        self.sm.current = 'espera'
         try:
             contrato = store.get('datos_usuario')['contrato']
             usuario_id = store.get('datos_usuario')['id_usuario']
