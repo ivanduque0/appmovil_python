@@ -23,15 +23,10 @@ import time
 #from jnius import autoclass
 # from kivy.uix.screenmanager import ScreenManager, Screen
 
-URL_APERTURA='https://webseguricel.up.railway.app/apertura/'
-URL_APERTURAS="https://webseguricel.up.railway.app/aperturasusuarioapi/"
-URL_CONFIG="https://webseguricel.up.railway.app/dispositivosapimobile/"
-#URL_LOCAL='http://192.168.0.195:43157/'
+URL_API='https://webseguricel.up.railway.app/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
-
 # store.put('datos_usuario', contrato=CONTRATO, id_usuario=ID_USUARIO)
-
 class seguricel_prototipo(MDApp):
 
     def build(self):
@@ -47,6 +42,7 @@ class seguricel_prototipo(MDApp):
         root = FloatLayout()
         self.sm = ScreenManager()
         self.contratos=[]
+        self.cerrarpopup=False
         ################################################
         # A PARTIR DE AUQI ESTAN LAS COSAS DE LA SCREEN#
         #                   DE INICIO                  #
@@ -316,6 +312,7 @@ class seguricel_prototipo(MDApp):
             self.sm.current = 'datos'
         else:
             threading.Thread(target=self.feedbacks).start()
+            threading.Thread(target=self.puertaAbierta2).start()
             #self.startServicioFeedback(self.id_usuario_cargar)
         # else:
         #     self.id_usuario.text = 
@@ -332,7 +329,7 @@ class seguricel_prototipo(MDApp):
     def popUpEspera(self, titulo, contenido):
         self.mensajePopUp = Popup(
             title=titulo,
-            content=Label(text=contenido),
+            content=Label(text=contenido,font_size='30sp',halign='center',valign='middle'),
             size_hint=(.9, .6),
             auto_dismiss=False,
             title_align='center',
@@ -342,35 +339,104 @@ class seguricel_prototipo(MDApp):
         #return mensajePopUp
 
     @mainthread
+    def popUpAviso(self, titulo, contenido):
+        self.AvisoPopUp = Popup(
+            title=titulo,
+            content=Label(text=contenido,font_size='30sp',halign='center',valign='middle'),
+            size_hint=(.9, .6),
+            auto_dismiss=True,
+            title_align='center',
+            title_size= '50sp',
+        )
+        self.AvisoPopUp.open()
+        #return mensajePopUp
+
+    @mainthread
     def cerrarPopUPEspera(self):
         self.mensajePopUp.dismiss()
         self.sm.current = 'inicio'
+        self.cerrarpopup = False
     
     def popUpAperturaEsperar(self):
         self.popUpEspera('Procesando\nPeticion', 'Por favor espere mientras\nse procesa la peticion')
-        time.sleep(3)
-        self.cerrarPopUPEspera()
-        
+        self.cerrarpopup = True
+        # time.sleep(3)
+        # self.cerrarPopUPEspera()
+    
+    def popUpPuertaAbierta(self, acceso):
+        self.popUpAviso('!PUERTA ABIERTA¡', f'Usted ha sido el ultimo\nen abrir el acceso "{acceso}",\npor favor verifique que el acceso\nse encuentra cerrado')
+    
     def feedbacks(self):
         idd = store.get('datos_usuario')['id_usuario']
-        aperturasjson = requests.get(url=f"{URL_APERTURAS}{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+        aperturasjson = requests.get(url=f"{URL_API}aperturasusuarioapi/{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
         cantidadAperturas = len(aperturasjson)
         feedbacksProcesados=0
         while cantidadAperturas>feedbacksProcesados:
             try:
                 feedbacksProcesados=0
-                aperturasjson = requests.get(url=f"{URL_APERTURAS}{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                aperturasjson = requests.get(url=f"{URL_API}aperturasusuarioapi/{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                 for apertura in aperturasjson:
                     #print(apertura['abriendo'])
                     #print(apertura['feedback'])
                     if apertura['abriendo'] and not apertura['feedback']:
-                        requests.put(url=f"{URL_APERTURAS}{apertura['id']}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5)
+                        requests.put(url=f"{URL_API}aperturasusuarioapi/{apertura['id']}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5)
                         self.dialogo_feedback()
                         #print("FEEDBACK ENVIADO!")
+                        if self.cerrarpopup:
+                            self.cerrarPopUPEspera()
                     elif apertura['abriendo'] and apertura['feedback']:
                         feedbacksProcesados+=1
             except Exception as e:
                 print(f'{e} - fallo en feedback')
+
+    def puertaAbierta(self):
+        peatonales = store.get('accesos')['peatonales']
+        vehiculares = store.get('accesos')['vehiculares']
+        contrato = store.get('datos_usuario')['contrato']
+        cedula = store.get('datos_usuario')['cedula']
+        numerosAccesosPeatonales=[1,2,3,4,5,6,7,8,9,10]
+        # puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+        while True:
+            try:
+                puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                for puerta in puertasabiertasjson:
+                    acceso=int(puerta['acceso'])
+                    # print(f"antes: {type(acceso)}")
+                    # print(peatonales)
+                    # print(vehiculares)
+                    if acceso in numerosAccesosPeatonales:
+                        accesoDescripcion = peatonales[acceso]
+                    else:
+                        accesoDescripcion = vehiculares[acceso]
+                    self.popUpPuertaAbierta(accesoDescripcion)
+            except Exception as e:
+                print(f'{e} - fallo en puerta abierta')
+            time.sleep(5)
+    
+    def puertaAbierta2(self):
+        peatonales = store.get('accesos')['peatonales']
+        vehiculares = store.get('accesos')['vehiculares']
+        contrato = store.get('datos_usuario')['contrato']
+        cedula = store.get('datos_usuario')['cedula']
+        numerosAccesosPeatonales=['1','2','3','4','5','6','7','8','9','10']
+        # puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+        while True:
+            try:
+                puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                #print(puertasabiertasjson)
+                for puerta in puertasabiertasjson:
+                    acceso=puerta['acceso']
+                    # print(f"antes: {type(acceso)}")
+                    # print(peatonales)
+                    # print(vehiculares)
+                    if acceso in numerosAccesosPeatonales:
+                        accesoDescripcion = peatonales[acceso]
+                    else:
+                        accesoDescripcion = vehiculares[acceso]
+                    self.popUpPuertaAbierta(accesoDescripcion)
+            except Exception as e:
+                print(f'{e} - fallo en puerta abierta')
+            time.sleep(5)
     
     # def conectarWifi(self):
     #     param = {}
@@ -408,7 +474,7 @@ class seguricel_prototipo(MDApp):
             accesosPeatonalesConDescripcion={}
             accesosVehicularesConDescripcion={}
             try:
-                accesos_http = requests.post(url=f"{URL_CONFIG}{self.contrato_seleccionado}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                accesos_http = requests.post(url=f"{URL_API}dispositivosapimobile/{self.contrato_seleccionado}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                 for dispositivo in accesos_http:
                     if dispositivo['descripcion'] == 'SERVIDOR LOCAL':
                         store.put('servidor', servidor=dispositivo['dispositivo'])
@@ -863,7 +929,7 @@ class seguricel_prototipo(MDApp):
             contrato=""
             try:
                 contratos_json=store.get('contratos')['contratos']
-                contratos_http = requests.get(url=f"{URL_CONFIG}{self.id_usuario.text}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                contratos_http = requests.get(url=f"{URL_API}dispositivosapimobile/{self.id_usuario.text}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                 
                 menu_items = [
                     {
@@ -878,7 +944,7 @@ class seguricel_prototipo(MDApp):
                     contratos.append(contrato['contrato'])
                 if contratos:
                     contrato=contratos[0]
-                    accesos_http = requests.post(url=f"{URL_CONFIG}{contrato}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                    accesos_http = requests.post(url=f"{URL_API}dispositivosapimobile/{contrato}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                     #print(accesos_http)
                     for dispositivo in accesos_http:
                         if dispositivo['descripcion'] == 'SERVIDOR LOCAL':
@@ -905,16 +971,21 @@ class seguricel_prototipo(MDApp):
                                         index = descripcion.index('(')
                                         accesosVehicularesConDescripcion[acceso]=descripcion[:index]
                                         break
-                # print(accesosPeatonales)
-                # print(accesosVehiculares)
-                # try:
-                    # self.stopServicioFeedback()
-                # except:
-                    # pass
+                    # print(accesosPeatonales)
+                    # print(accesosVehiculares)
+                    # try:
+                        # self.stopServicioFeedback()
+                    # except:
+                        # pass
+                    #print(f"{URL_API}usuarioindividualporidapi/{contrato}/{self.id_usuario.text}/")
+                    informacionUsuario = requests.get(url=f"{URL_API}usuarioindividualporidapi/{contrato}/{self.id_usuario.text}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                    #print(informacionUsuario)
+                    cedula=informacionUsuario[0]['cedula']
+                    store.put('datos_usuario', contrato=contrato, id_usuario=self.id_usuario.text, cedula=informacionUsuario[0]['cedula'])
+                    threading.Thread(target=self.puertaAbierta).start()
+                    threading.Thread(target=self.feedbacks).start()
                 store.put('contratos', contratos=contratos)
-                store.put('datos_usuario', contrato=contrato, id_usuario=self.id_usuario.text)
                 store.put('accesos', vehiculares=accesosVehicularesConDescripcion,peatonales=accesosPeatonalesConDescripcion)
-                threading.Thread(target=self.feedbacks).start()
                 #self.startServicioFeedback(self.id_usuario.text)
                 #store.put('nombre_accesos', vehiculares=descripcion_vehicular,peatonales=descripcion_peatonal)
                 #accesos=store.get('accesos')
@@ -1055,7 +1126,8 @@ class seguricel_prototipo(MDApp):
                 self.id_usuario_cargar = self.id_usuario.text
                 self.id_usuario.text = ""
                 self.sm.current = 'inicio'
-            except:
+            except Exception as e:
+                print(f"{e} - hubo un error al agregar al usuario")
                 self.id_usuario_cargar = "reconectando"
                 self.dialogo.text='Fallo al conectar con el servidor'
                 self.dialogo.open()
@@ -1102,14 +1174,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"1",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1129,19 +1204,21 @@ class seguricel_prototipo(MDApp):
                 if not modoInternet:
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        print(self.servidorLocal)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/2/seguricel_wifi_activo", timeout=3)
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"2",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1168,14 +1245,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"3",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1202,14 +1282,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"4",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1236,14 +1319,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"5",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1270,14 +1356,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"6",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1304,14 +1393,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"7",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1338,14 +1430,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"8",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1372,14 +1467,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"9",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1406,14 +1504,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"10",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1440,14 +1541,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"11",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1474,14 +1578,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"12",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1508,14 +1615,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"13",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1542,14 +1652,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"14",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1576,14 +1689,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"15",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1610,14 +1726,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"16",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1644,14 +1763,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"17",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1678,14 +1800,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"18",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1712,14 +1837,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"19",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
@@ -1746,14 +1874,17 @@ class seguricel_prototipo(MDApp):
                     except:
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
+                    finally:
+                        self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(URL_APERTURA, 
+                        requests.post(url=f"{URL_API}apertura", 
                         json={"contrato":contrato,
                             "acceso":"20",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
                         threading.Thread(target=self.feedbacks).start()
                     except:
+                        self.cerrarPopUPEspera()
                         self.dialogo.text='No fue posible enviar la peticion'
                         self.dialogo.open()
         except:
