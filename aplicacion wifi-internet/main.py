@@ -30,6 +30,9 @@ store = JsonStore('datos_usuario.json')
 class seguricel_prototipo(MDApp):
 
     def build(self):
+        self.hilopuertaabierta = threading.Thread(target=self.puertaAbierta)
+        self.hilopuertaabierta.setDaemon(True)
+        self.killThread=False
         window_sizes=Window.size
         self.fontSizeAccesos ="30sp"
         peatonales=0
@@ -312,7 +315,7 @@ class seguricel_prototipo(MDApp):
             self.sm.current = 'datos'
         else:
             threading.Thread(target=self.feedbacks).start()
-            threading.Thread(target=self.puertaAbierta2).start()
+            self.hilopuertaabierta.start()
             #self.startServicioFeedback(self.id_usuario_cargar)
         # else:
         #     self.id_usuario.text = 
@@ -342,7 +345,7 @@ class seguricel_prototipo(MDApp):
     def popUpAviso(self, titulo, contenido):
         self.AvisoPopUp = Popup(
             title=titulo,
-            content=Label(text=contenido,font_size='30sp',halign='center',valign='middle'),
+            content=Label(text=contenido,font_size='25sp',halign='center',valign='middle'),
             size_hint=(.9, .6),
             auto_dismiss=True,
             title_align='center',
@@ -358,13 +361,13 @@ class seguricel_prototipo(MDApp):
         self.cerrarpopup = False
     
     def popUpAperturaEsperar(self):
-        self.popUpEspera('Procesando\nPeticion', 'Por favor espere mientras\nse procesa la peticion')
+        self.popUpEspera('Procesando\nPeticion', 'Por favor espere\nmientras se procesa\nla peticion')
         self.cerrarpopup = True
         # time.sleep(3)
         # self.cerrarPopUPEspera()
     
     def popUpPuertaAbierta(self, acceso):
-        self.popUpAviso('!PUERTA ABIERTA¡', f'Usted ha sido el ultimo\nen abrir el acceso "{acceso}",\npor favor verifique que el acceso\nse encuentra cerrado')
+        self.popUpAviso('!PUERTA ABIERTA¡', f'Usted ha sido el ultimo\nen abrir el acceso\n"{acceso}",\npor favor verifique que\nel acceso se encuentra\ncerrado')
     
     def feedbacks(self):
         idd = store.get('datos_usuario')['id_usuario']
@@ -394,36 +397,11 @@ class seguricel_prototipo(MDApp):
         vehiculares = store.get('accesos')['vehiculares']
         contrato = store.get('datos_usuario')['contrato']
         cedula = store.get('datos_usuario')['cedula']
-        numerosAccesosPeatonales=[1,2,3,4,5,6,7,8,9,10]
+        numerosAccesosPeatonales=[ '1','2','3','4','5','6','7','8','9','10']
         # puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
-        while True:
+        while not self.killThread:
             try:
                 puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
-                for puerta in puertasabiertasjson:
-                    acceso=int(puerta['acceso'])
-                    # print(f"antes: {type(acceso)}")
-                    # print(peatonales)
-                    # print(vehiculares)
-                    if acceso in numerosAccesosPeatonales:
-                        accesoDescripcion = peatonales[acceso]
-                    else:
-                        accesoDescripcion = vehiculares[acceso]
-                    self.popUpPuertaAbierta(accesoDescripcion)
-            except Exception as e:
-                print(f'{e} - fallo en puerta abierta')
-            time.sleep(5)
-    
-    def puertaAbierta2(self):
-        peatonales = store.get('accesos')['peatonales']
-        vehiculares = store.get('accesos')['vehiculares']
-        contrato = store.get('datos_usuario')['contrato']
-        cedula = store.get('datos_usuario')['cedula']
-        numerosAccesosPeatonales=['1','2','3','4','5','6','7','8','9','10']
-        # puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
-        while True:
-            try:
-                puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
-                #print(puertasabiertasjson)
                 for puerta in puertasabiertasjson:
                     acceso=puerta['acceso']
                     # print(f"antes: {type(acceso)}")
@@ -483,7 +461,7 @@ class seguricel_prototipo(MDApp):
                         if 'peatonal' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
                             #accesosPeatonales=accesosPeatonales+1
                             descripcion=dispositivo['descripcion']
-                            acceso=int(dispositivo['acceso'])
+                            acceso=str(dispositivo['acceso'])
                             #print(descripcion)
                             for letra in descripcion:
                                 if letra == '(':
@@ -493,7 +471,7 @@ class seguricel_prototipo(MDApp):
                         elif 'vehicular' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
                             
                             descripcion=dispositivo['descripcion']
-                            acceso=int(dispositivo['acceso'])
+                            acceso=str(dispositivo['acceso'])
                             #print(descripcion)
                             for letra in descripcion:
                                 if letra == '(':
@@ -954,7 +932,7 @@ class seguricel_prototipo(MDApp):
                             if 'peatonal' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
                                 #accesosPeatonales=accesosPeatonales+1
                                 descripcion=dispositivo['descripcion']
-                                acceso=int(dispositivo['acceso'])
+                                acceso=str(dispositivo['acceso'])
                                 #print(descripcion)
                                 for letra in descripcion:
                                     if letra == '(':
@@ -964,7 +942,7 @@ class seguricel_prototipo(MDApp):
                             elif 'vehicular' in dispositivo['descripcion'].lower() and ('entrada' in dispositivo['descripcion'].lower() or 'salida' in dispositivo['descripcion'].lower()) and not ('telefono' in dispositivo['descripcion'].lower() or 'rfid' in dispositivo['descripcion'].lower() or 'huella' in dispositivo['descripcion'].lower()):
                             
                                 descripcion=dispositivo['descripcion']
-                                acceso=int(dispositivo['acceso'])
+                                acceso=str(dispositivo['acceso'])
                                 #print(descripcion)
                                 for letra in descripcion:
                                     if letra == '(':
@@ -980,12 +958,11 @@ class seguricel_prototipo(MDApp):
                     #print(f"{URL_API}usuarioindividualporidapi/{contrato}/{self.id_usuario.text}/")
                     informacionUsuario = requests.get(url=f"{URL_API}usuarioindividualporidapi/{contrato}/{self.id_usuario.text}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                     #print(informacionUsuario)
-                    cedula=informacionUsuario[0]['cedula']
                     store.put('datos_usuario', contrato=contrato, id_usuario=self.id_usuario.text, cedula=informacionUsuario[0]['cedula'])
-                    threading.Thread(target=self.puertaAbierta).start()
-                    threading.Thread(target=self.feedbacks).start()
                 store.put('contratos', contratos=contratos)
                 store.put('accesos', vehiculares=accesosVehicularesConDescripcion,peatonales=accesosPeatonalesConDescripcion)
+                self.hilopuertaabierta.start()
+                threading.Thread(target=self.feedbacks).start()
                 #self.startServicioFeedback(self.id_usuario.text)
                 #store.put('nombre_accesos', vehiculares=descripcion_vehicular,peatonales=descripcion_peatonal)
                 #accesos=store.get('accesos')
@@ -1178,7 +1155,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"1",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1212,7 +1189,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"2",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1249,7 +1226,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"3",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1286,7 +1263,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"4",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1323,7 +1300,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"5",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1360,7 +1337,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"6",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1397,7 +1374,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"7",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1434,7 +1411,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"8",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1471,7 +1448,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"9",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1508,7 +1485,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"10",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1545,7 +1522,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"11",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1582,7 +1559,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"12",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1619,7 +1596,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"13",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1656,7 +1633,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"14",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1693,7 +1670,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"15",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1730,7 +1707,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"16",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1767,7 +1744,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"17",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1804,7 +1781,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"18",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1841,7 +1818,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"19",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1878,7 +1855,7 @@ class seguricel_prototipo(MDApp):
                         self.cerrarPopUPEspera()
                 else:
                     try:
-                        requests.post(url=f"{URL_API}apertura", 
+                        requests.post(url=f"{URL_API}apertura/", 
                         json={"contrato":contrato,
                             "acceso":"20",
                             "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
@@ -1901,3 +1878,4 @@ class seguricel_prototipo(MDApp):
 if __name__ == "__main__":
     app = seguricel_prototipo()
     app.run()
+    app.killThread = True
