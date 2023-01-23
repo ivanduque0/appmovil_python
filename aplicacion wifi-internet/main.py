@@ -1167,21 +1167,21 @@ class seguricel_prototipo(MDApp):
     def popUpIntentoAperturaInternet(self):
         self.cerrarPopUPEspera()
         content = GridLayout(cols=1)
-        blayout = BoxLayout(spacing=5,orientation='vertical')
-        btnNo = Button(text='NO', size_hint_y=None, height=60)
-        btnSi = Button(text='SI', size_hint_y=None, height=60)
+        blayout = BoxLayout(spacing=5,orientation='horizontal')
+        btnNo = Button(text='NO', size_hint = (.5, 0.7), font_size = "20sp")
+        btnSi = Button(text='SI', size_hint = (.5, 0.7), font_size = "20sp")
         blayout.add_widget(btnSi)
         blayout.add_widget(btnNo)
-        content.add_widget(Label(text='No fue posible abrir por WIFI,\n¿Desea intentarlo\npor internet?', 
-                                 font_size='30sp',halign='center',valign='middle'))
+        content.add_widget(Label(text='¿Desea intentarlo\npor internet?', 
+                                 font_size='25sp',halign='center',valign='middle', size_hint=(1, .9)))
         content.add_widget(blayout)
         self.popUpIntento = Popup(
-                title='Fallo al intentar abrir por WiFi...',
+                title='No fue posible abrir por WIFI...',
                 content=content,
                 size_hint=(.9, .6),
                 auto_dismiss=False,
                 title_align='center',
-                title_size= '50sp',
+                title_size= '40sp',
             )
         
         btnSi.bind(on_press=self.verificacionIntentoAperturaInternet)
@@ -1195,13 +1195,13 @@ class seguricel_prototipo(MDApp):
     def verificacionIntentoAperturaInternet(self, obj):
         self.cerrarPopUpFalloWifi('a')
         content = GridLayout(cols=1)
-        blayout = BoxLayout(spacing=5,orientation='vertical')
-        btnNo = Button(text='NO', size_hint_y=None, height=60)
-        btnSi = Button(text='SI', size_hint_y=None, height=60)
+        blayout = BoxLayout(spacing=5,orientation='horizontal')
+        btnNo = Button(text='NO', size_hint = (.5, 0.7), font_size = "20sp")
+        btnSi = Button(text='SI', size_hint = (.5, 0.7), font_size = "20sp")
         blayout.add_widget(btnSi)
         blayout.add_widget(btnNo)
         content.add_widget(Label(text='¿Seguro que desea\nabrir por internet?', 
-                                 font_size='30sp',halign='center',valign='middle'))
+                                 font_size='30sp',halign='center',valign='middle', size_hint=(1, .9)))
         content.add_widget(blayout)
         self.popUpIntento = Popup(
                 title='¡AVISO!',
@@ -1249,6 +1249,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/1/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='1'
                         self.popUpIntentoAperturaInternet()
@@ -1287,6 +1288,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/2/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='2'
                         self.popUpIntentoAperturaInternet()
@@ -1328,6 +1330,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/3/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='3'
                         self.popUpIntentoAperturaInternet()
@@ -1369,6 +1372,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/4/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='4'
                         self.popUpIntentoAperturaInternet()
@@ -1410,6 +1414,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/5/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='5'
                         self.popUpIntentoAperturaInternet()
@@ -1451,6 +1456,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/6/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='6'
                         self.popUpIntentoAperturaInternet()
@@ -1492,6 +1498,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/7/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='7'
                         self.popUpIntentoAperturaInternet()
@@ -1532,6 +1539,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/8/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='8'
                         self.popUpIntentoAperturaInternet()
@@ -1573,6 +1581,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/9/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='9'
                         self.popUpIntentoAperturaInternet()
@@ -1614,6 +1623,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/10/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='10'
                         self.popUpIntentoAperturaInternet()
@@ -1656,6 +1666,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/11/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='11'
                         self.popUpIntentoAperturaInternet()
@@ -1697,6 +1708,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/12/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='12'
                         self.popUpIntentoAperturaInternet()
@@ -1738,6 +1750,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/13/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='13'
                         self.popUpIntentoAperturaInternet()
@@ -1779,6 +1792,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/14/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='14'
                         self.popUpIntentoAperturaInternet()
@@ -1820,6 +1834,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/15/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='15'
                         self.popUpIntentoAperturaInternet()
@@ -1861,6 +1876,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/16/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='16'
                         self.popUpIntentoAperturaInternet()
@@ -1902,6 +1918,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/17/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='17'
                         self.popUpIntentoAperturaInternet()
@@ -1943,6 +1960,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/18/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='18'
                         self.popUpIntentoAperturaInternet()
@@ -1984,6 +2002,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/19/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='19'
                         self.popUpIntentoAperturaInternet()
@@ -2025,6 +2044,7 @@ class seguricel_prototipo(MDApp):
                     try:
                         #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
                         requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/20/seguricel_wifi_activo", timeout=3)
+                        self.cerrarPopUPEspera()
                     except:
                         self.accesoIntento='20'
                         self.popUpIntentoAperturaInternet()
