@@ -4,7 +4,7 @@
 title = Seguricel
 
 # (str) Package name
-package.name = seguricelApp
+package.name = seguricelapp
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3, kivy, kivymd==1.0.2, pillow, requests, openssl, urllib3, chardet, idna
+requirements = python3, able_recipe, kivy, kivymd==1.0.2, pillow, requests, openssl, urllib3, chardet, idna
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -55,6 +55,7 @@ orientation = portrait
 # (list) List of service to declare
 #services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
 #services = Feedback:feedbackservice.py:foreground
+services = Able:bleservice.py:foreground
 #
 # OSX Specific
 #
@@ -94,7 +95,7 @@ android.presplash_color = white
 #icon.adaptive_background.filename = %(source.dir)s/data/icon_bg.png
 
 # (list) Permissions
-android.permissions = INTERNET
+android.permissions = INTERNET, ACCESS_FINE_LOCATION, FOREGROUND_SERVICE, BLUETOOTH, BLUETOOTH_ADMIN, BLUETOOTH_CONNECT, BLUETOOTH_ADVERTISE
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host

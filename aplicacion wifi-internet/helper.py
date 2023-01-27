@@ -43,3 +43,8 @@ MDIconButton:
     icon_size: "50sp"
     size_hint:(0.20,0.1)
 """
+
+boton_bluetooth = """
+Button:
+    on_press: app.ble_dispatcher.start_service()
+"""

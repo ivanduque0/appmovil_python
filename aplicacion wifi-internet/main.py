@@ -21,6 +21,8 @@ from kivymd.uix.selectioncontrol import MDSwitch
 # from plyer import wifi
 from kivy.uix.popup import Popup
 import time
+from able import BluetoothDispatcher, Permission, require_bluetooth_enabled
+from jnius import autoclass
 #from jnius import autoclass
 # from kivy.uix.screenmanager import ScreenManager, Screen
 
@@ -28,9 +30,43 @@ URL_API='https://webseguricel.up.railway.app/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
 # store.put('datos_usuario', contrato=CONTRATO, id_usuario=ID_USUARIO)
+
+class Dispatcher(BluetoothDispatcher):
+    @property
+    def service(self):
+        return autoclass("org.test.seguricelapp.ServiceAble")
+
+    @property
+    def activity(self):
+        return autoclass("org.kivy.android.PythonActivity").mActivity
+
+    # Need to turn on the adapter, before service is started
+    @require_bluetooth_enabled
+    def start_service(self):
+        uuid = store.get('accesos')['beacon_uuid']
+        self.service.start(
+            self.activity,
+            uuid
+            # Pass UUID to advertise
+            
+        )
+        MDApp.get_running_app().stop()  # Can close the app, service will continue running
+
+    # def stop_service(self):
+    #     self.service.stop(self.activity)
+
 class seguricel_prototipo(MDApp):
 
     def build(self):
+        self.ble_dispatcher = Dispatcher(
+            # This app does not use device scanning,
+            # so the list of required permissions can be reduced
+            runtime_permissions=[
+                Permission.BLUETOOTH_CONNECT,
+                Permission.BLUETOOTH_ADVERTISE,
+                Permission.ACCESS_FINE_LOCATION,
+            ]
+        )
         self.hilopuertaabierta = threading.Thread(target=self.puertaAbierta, daemon=True)
         self.killThread=False
         self.cambiarDatosPtaAbierta=False
@@ -58,29 +94,68 @@ class seguricel_prototipo(MDApp):
         self.screen_entradas = Screen(name='entradas')
         self.screen_salidas = Screen(name='salidas')
         self.screen_espera = Screen(name='espera')
+
+        self.layout_inicio = GridLayout(cols=1, spacing=30, size_hint=(None,None))
+        self.layout_inicio.bind(minimum_height=self.layout_inicio.setter('height'),
+        minimum_width=self.layout_inicio.setter('width'))
+        self.tamano_x=window_sizes[0]*0.9
+        self.tamano_y=self.tamano_x*180/300
         btn3 = Button(
                     #  color =(1, 0, .65, 1),
                     #background_normal = 'acceso_principal.png',
                     #  background_down ='down.png',
-                     size_hint = (.9, .3),
-                     pos_hint = {'center_x': 0.5, 'center_y': 0.8},
+                     #size_hint = (.9, .3),
+                     #pos_hint = {'center_x': 0.5, 'center_y': 0.8},
+                     size_hint = (None, None),
                      text='ENTRAR',
+                     size=(self.tamano_x, self.tamano_y),
                      font_size = "50sp",
                    )
         btn3.bind(on_press=self.cambiar_entradas)
-        self.screen_inicio.add_widget(btn3)
+        #self.screen_inicio.add_widget(btn3)
+        self.layout_inicio.add_widget(btn3)
 
         btn4 = Button(
                     #  color =(1, 0, .65, 1),
                      #background_normal = 'acceso_vehicular.png',
                     #  background_down ='down.png',
-                     size_hint = (.9, .3),
-                     pos_hint = {'center_x': 0.5, 'center_y': 0.45},
+                     #size_hint = (.9, .3),
+                     #pos_hint = {'center_x': 0.5, 'center_y': 0.45},
+                     size_hint = (None, None),
                      text='SALIR',
+                     size=(self.tamano_x, self.tamano_y),
                      font_size = "50sp",
                    )
         btn4.bind(on_press=self.cambiar_salidas)
-        self.screen_inicio.add_widget(btn4)
+        #self.screen_inicio.add_widget(btn4)
+        self.layout_inicio.add_widget(btn4)
+
+        btn6= Builder.load_string(helper.boton_bluetooth)
+        btn6.size_hint = (None, None)
+        btn6.size=(self.tamano_x, self.tamano_y)
+        btn6.font_size="50sp"
+        btn6.text = 'ABRIR CON\nBLUETOOTH'
+
+        # btn5 = Button(
+        #             #  color =(1, 0, .65, 1),
+        #              #background_normal = 'acceso_vehicular.png',
+        #             #  background_down ='down.png',
+        #              #size_hint = (.9, .3),
+        #              #pos_hint = {'center_x': 0.5, 'center_y': 0.25},
+        #              size_hint = (None, None),
+        #              text='ABRIR CON\nBLUETOOTH',
+        #              size=(self.tamano_x, self.tamano_y),
+        #              font_size = "50sp",
+        #            )
+        # btn5.bind(on_press=app.ble_dispatcher.start_service())
+        #self.screen_inicio.add_widget(btn5)
+        self.layout_inicio.add_widget(btn6)
+
+        scrollview_antesabrir = ScrollView(bar_width='2dp', smooth_scroll_end=10, 
+        size_hint=(.9, .9),
+        pos_hint = {'center_x': 0.5, 'center_y': 0.5})
+        scrollview_antesabrir.add_widget(self.layout_inicio)
+        self.screen_inicio.add_widget(scrollview_antesabrir)  
         self.sm.add_widget(self.screen_inicio)
         self.sm.add_widget(self.screen_entradas)
         self.sm.add_widget(self.screen_salidas)
@@ -451,8 +526,6 @@ class seguricel_prototipo(MDApp):
     #     #     size_hint=(.8, 1),
     #     #     auto_dismiss=True
     #     # ))
-
-
 
 
     # def startServicioFeedback(self, argumentt):
@@ -983,7 +1056,7 @@ class seguricel_prototipo(MDApp):
                     #print(f"{URL_API}usuarioindividualporidapi/{contrato}/{self.id_usuario.text}/")
                     informacionUsuario = requests.get(url=f"{URL_API}usuarioindividualporidapi/{contrato}/{self.id_usuario.text}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
                     #print(informacionUsuario)
-                    store.put('datos_usuario', contrato=contrato, id_usuario=self.id_usuario.text, cedula=informacionUsuario[0]['cedula'])
+                    store.put('datos_usuario', contrato=contrato, id_usuario=self.id_usuario.text, cedula=informacionUsuario[0]['cedula'], beacon_uuid=informacionUsuario[0]['beacon_uuid'])
                 store.put('contratos', contratos=contratos)
                 store.put('accesos', vehiculares=accesosVehicularesConDescripcion,peatonales=accesosPeatonalesConDescripcion)
                 if not self.hilopuertaabierta.is_alive():
