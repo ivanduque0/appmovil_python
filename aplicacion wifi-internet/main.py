@@ -43,7 +43,7 @@ class Dispatcher(BluetoothDispatcher):
     # Need to turn on the adapter, before service is started
     @require_bluetooth_enabled
     def start_service(self):
-        uuid = store.get('accesos')['beacon_uuid']
+        uuid = store.get('datos_usuario')['beacon_uuid']
         self.service.start(
             self.activity,
             uuid
