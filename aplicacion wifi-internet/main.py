@@ -50,7 +50,7 @@ class Dispatcher(BluetoothDispatcher):
             # Pass UUID to advertise
             
         )
-        MDApp.get_running_app().stop()  # Can close the app, service will continue running
+        #MDApp.get_running_app().stop()  # Can close the app, service will continue running
 
     # def stop_service(self):
     #     self.service.stop(self.activity)
