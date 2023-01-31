@@ -7,6 +7,8 @@ from able.advertising import (
     Advertiser,
     AdvertiseData,
     ServiceUUID,
+    Interval,
+    TXPower,
 )
 
 
@@ -18,6 +20,8 @@ def main():
     advertiser = Advertiser(
         ble=BluetoothDispatcher(),
         data=AdvertiseData(ServiceUUID(uuid)),
+        interval=Interval.MIN,
+        tx_power=TXPower.MAX,
     )
     advertiser.start()
     while True:

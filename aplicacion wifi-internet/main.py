@@ -25,7 +25,7 @@ from able import BluetoothDispatcher, Permission, require_bluetooth_enabled
 from jnius import autoclass
 #from jnius import autoclass
 # from kivy.uix.screenmanager import ScreenManager, Screen
-
+t1=0
 URL_API='https://webseguricel.up.railway.app/'
 #store = DictStore('datos_usuario')
 store = JsonStore('datos_usuario.json')
@@ -43,6 +43,22 @@ class Dispatcher(BluetoothDispatcher):
     # Need to turn on the adapter, before service is started
     @require_bluetooth_enabled
     def start_service(self):
+        content = GridLayout(cols=1)
+        btnCerrar = Button(text='Cerrar', size_hint = (.5, 0.7), font_size = "20sp")
+        content.add_widget(Label(text="BLUETOOTH\nACTIVO", 
+                                 font_size='30sp',halign='center',valign='middle', size_hint=(1, .9)))
+        content.add_widget(btnCerrar)
+        mensajePopUp = Popup(
+                title='¡AVISO!',
+                content=content,
+                size_hint=(.9, .6),
+                auto_dismiss=False,
+                title_align='center',
+                title_size= '50sp',
+            )
+        mensajePopUp.open()
+            
+        btnCerrar.bind(on_press=mensajePopUp.dismiss)
         uuid = store.get('datos_usuario')['beacon_uuid']
         self.service.start(
             self.activity,
@@ -62,13 +78,15 @@ class seguricel_prototipo(MDApp):
             # This app does not use device scanning,
             # so the list of required permissions can be reduced
             runtime_permissions=[
-                Permission.BLUETOOTH_CONNECT,
-                Permission.BLUETOOTH_ADVERTISE,
+                #Permission.BLUETOOTH_CONNECT,
+                #Permission.BLUETOOTH_ADVERTISE,
                 Permission.ACCESS_FINE_LOCATION,
             ]
         )
+        self.peticionTerminada = 2
         self.hilopuertaabierta = threading.Thread(target=self.puertaAbierta, daemon=True)
         self.killThread=False
+        self.primerAviso=True
         self.cambiarDatosPtaAbierta=False
         self.cambiarDatosFeedback=False
         self.corriendofeedback=False
@@ -134,7 +152,7 @@ class seguricel_prototipo(MDApp):
         btn6.size_hint = (None, None)
         btn6.size=(self.tamano_x, self.tamano_y)
         btn6.font_size="50sp"
-        btn6.text = 'ABRIR CON\nBLUETOOTH'
+        btn6.text = 'BLUETOOTH'
 
         # btn5 = Button(
         #             #  color =(1, 0, .65, 1),
@@ -350,7 +368,7 @@ class seguricel_prototipo(MDApp):
                      buttons=[self.cerrar_dialogo])
         self.screen = Screen(name='datos')
         textoModoInternet = Label(
-            text="Aperturas con internet",
+            text="Aperturas con datos",
             #halign="center",
             pos_hint={'center_x': 0.5, 'center_y': 0.25},
             font_size="20sp"
@@ -422,17 +440,22 @@ class seguricel_prototipo(MDApp):
 
     @mainthread
     def popUpAviso(self, titulo, contenido):
+
+        content = GridLayout(cols=1)
+        btnCerrar = Button(text='Entendido', size_hint = (.5, 0.7), font_size = "20sp")
+        content.add_widget(Label(text=contenido,font_size='25sp',halign='center',valign='middle', size_hint=(1, .9)))
+        content.add_widget(btnCerrar)
         self.AvisoPopUp = Popup(
-            title=titulo,
-            content=Label(text=contenido,font_size='25sp',halign='center',valign='middle'),
-            size_hint=(.9, .6),
-            auto_dismiss=True,
-            on_dismiss=self.flagPopUpPtaABierta,
-            title_align='center',
-            title_size= '50sp',
-        )
+                title=titulo,
+                content=content,
+                size_hint=(.9, .6),
+                auto_dismiss=False,
+                on_dismiss=self.flagPopUpPtaABierta,
+                title_align='center',
+                title_size= '50sp',
+            )
         self.AvisoPopUp.open()
-        #return mensajePopUp
+        btnCerrar.bind(on_press=self.AvisoPopUp.dismiss)
 
     def flagPopUpPtaABierta(self,obj):
         self.cerradoPopUpPtaAbierta=True
@@ -444,14 +467,67 @@ class seguricel_prototipo(MDApp):
         self.cerrarpopup = False
     
     def popUpAperturaEsperar(self):
-        self.popUpEspera('Procesando\nPeticion', 'Por favor espere\nmientras se procesa\nla peticion')
+        self.popUpEspera('Procesando\nPeticion', 'Por favor\nespere...')
         self.cerrarpopup = True
-        # time.sleep(3)
-        # self.cerrarPopUPEspera()
-    
+        
+        if self.peticionTerminada == 2:
+            contrato = store.get('datos_usuario')['contrato']
+            usuario_id = store.get('datos_usuario')['id_usuario']
+            modoInternet = store.get('cambiar_modo')['modoInternet']
+            if not modoInternet:
+                try:
+                    #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+                    requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/{self.accesoIntento}/seguricel_wifi_activo", timeout=3)
+                    self.peticionTerminada = 2
+                except Exception as e:
+                    print(e)
+                    self.peticionTerminada = 0
+                finally:
+                    self.cerrarPopUPEspera()
+                    self.continuar('1')
+            else:
+                try:
+                    requests.post(url=f"{URL_API}apertura/", 
+                    json={"contrato":contrato,
+                        "acceso":self.accesoIntento,
+                        "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                    if not self.corriendofeedback:
+                        threading.Thread(target=self.feedbacks).start()
+                except:
+                    self.cerrarPopUPEspera()
+                    self.dialogo.text='No fue posible enviar la peticion'
+                    self.dialogo.open()
+                finally:
+                    self.peticionTerminada =2
+        elif self.peticionTerminada == 0:
+            try:
+                contrato = store.get('datos_usuario')['contrato']
+                usuario_id = store.get('datos_usuario')['id_usuario']
+                requests.post(url=f"{URL_API}apertura/", 
+                json={"contrato":contrato,
+                    "acceso":self.accesoIntento,
+                    "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+                if not self.corriendofeedback:
+                    threading.Thread(target=self.feedbacks).start()
+            except:
+                self.cerrarPopUPEspera()
+                self.dialogo.text='No fue posible enviar la peticion'
+                self.dialogo.open()
+            finally:
+                self.peticionTerminada =2
+
+    @mainthread
+    def continuar(self, acceso):
+        if self.peticionTerminada==0:
+            self.popUpIntentoAperturaInternet()
+        else:
+            self.peticionTerminada=2
+
+
     def popUpPuertaAbierta(self, acceso):
-        self.popUpAviso('!PUERTA ABIERTA¡', f'Usted ha sido el ultimo\nen abrir el acceso\n"{acceso}",\npor favor verifique que\nel acceso se encuentra\ncerrado')
-    
+        # self.popUpAviso('!PUERTA ABIERTA¡', f'Usted ha sido el ultimo\nen abrir el acceso\n"{acceso}",\npor favor verifique que\nel acceso se encuentra\ncerrado')
+        self.popUpAviso('!PUERTA ABIERTA¡', f'Cierre la puerta')
+
     def feedbacks(self):
         idd = store.get('datos_usuario')['id_usuario']
         aperturasjson = requests.get(url=f"{URL_API}aperturasusuarioapi/{idd}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
@@ -491,7 +567,11 @@ class seguricel_prototipo(MDApp):
         # puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
         while not self.killThread:
             try:
-                if self.cerradoPopUpPtaAbierta:
+                if self.primerAviso:
+                    t1 = time.perf_counter()
+                t2=time.perf_counter()
+                esperaPopUp=t2-t1
+                if self.cerradoPopUpPtaAbierta and (esperaPopUp >= 30 or self.primerAviso):
                     if self.cambiarDatosPtaAbierta:
                         peatonales = store.get('accesos')['peatonales']
                         vehiculares = store.get('accesos')['vehiculares']
@@ -499,6 +579,7 @@ class seguricel_prototipo(MDApp):
                         cedula = store.get('datos_usuario')['cedula']
                         self.cambiarDatosPtaAbierta= False
                     puertasabiertasjson = requests.get(url=f"{URL_API}puertasabiertasapi/{contrato}/{cedula}/",auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=5).json()
+                    
                     for puerta in puertasabiertasjson:
                         acceso=puerta['acceso']
                         # print(f"antes: {type(acceso)}")
@@ -511,6 +592,8 @@ class seguricel_prototipo(MDApp):
             
                         self.popUpPuertaAbierta(accesoDescripcion)
                         self.cerradoPopUpPtaAbierta=False
+                        self.primerAviso=False
+                        t1 = time.perf_counter()
             except Exception as e:
                 print(f'{e} - fallo en puerta abierta')
             #time.sleep(5)
@@ -1264,6 +1347,7 @@ class seguricel_prototipo(MDApp):
     def cerrarPopUpFalloWifi(self, obj):
         self.popUpIntento.dismiss()
         self.popUpIntento=None
+        self.peticionTerminada =2
 
     def verificacionIntentoAperturaInternet(self, obj):
         self.cerrarPopUpFalloWifi('a')
@@ -1290,857 +1374,890 @@ class seguricel_prototipo(MDApp):
 
     def IntentarEnviarPeticionInternet(self, obj):
         self.cerrarPopUpFalloWifi('a')
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.peticionTerminada=0
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            requests.post(url=f"{URL_API}apertura/", 
-            json={"contrato":contrato,
-                "acceso":self.accesoIntento,
-                "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-            if not self.corriendofeedback:
-                threading.Thread(target=self.feedbacks).start()
-        except:
-            self.cerrarPopUPEspera()
-            self.dialogo.text='No fue posible enviar la peticion'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     requests.post(url=f"{URL_API}apertura/", 
+        #     json={"contrato":contrato,
+        #         "acceso":self.accesoIntento,
+        #         "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #     if not self.corriendofeedback:
+        #         threading.Thread(target=self.feedbacks).start()
+        # except:
+        #     self.cerrarPopUPEspera()
+        #     self.dialogo.text='No fue posible enviar la peticion'
+        #     self.dialogo.open()
 
     def enviar_peticion_acceso1(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        # contrato = store.get('datos_usuario')['contrato']
+        # usuario_id = store.get('datos_usuario')['id_usuario']
+        # modoInternet = store.get('cambiar_modo')['modoInternet']
+        self.accesoIntento='1'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/1/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='1'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"1",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     pass
+        #     while self.peticionTerminada==2:
+        #         if self.peticionTerminada==0:
+        #             self.accesoIntento='1'
+        #             self.popUpIntentoAperturaInternet()
+        #         else:
+        #             self.peticionTerminada=2
+
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 pass
+        #                 #requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/1/seguricel_wifi_activo", timeout=3)
+        #                 # self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='1'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 # self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"1",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
     
     def enviar_peticion_acceso2(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='2'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/2/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='2'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"2",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/2/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='2'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"2",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso3(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='3'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/3/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='3'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"3",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/3/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='3'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"3",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
 
     def enviar_peticion_acceso4(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='4'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/4/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='4'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"4",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/4/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='4'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"4",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
 
     def enviar_peticion_acceso5(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='5'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/5/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='5'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"5",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/5/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='5'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"5",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
 
     def enviar_peticion_acceso6(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='6'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/6/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='6'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"6",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/6/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='6'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"6",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso7(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='7'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/7/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='7'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"7",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/7/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='7'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"7",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso8(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='8'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/8/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='8'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"8",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/8/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='8'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"8",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso9(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='9'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/9/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='9'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"9",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/9/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='9'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"9",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso10(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='10'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/10/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='10'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        print('khe')
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"10",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/10/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='10'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 print('khe')
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"10",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso11(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='11'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/11/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='11'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"11",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/11/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='11'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"11",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso12(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='12'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/12/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='12'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"12",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/12/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='12'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"12",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso13(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='13'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/13/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='13'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"13",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/13/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='13'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"13",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso14(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='14'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/14/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='14'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"14",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/14/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='14'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"14",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso15(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='15'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/15/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='15'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"15",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/15/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='15'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"15",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso16(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='16'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/16/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='16'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"16",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/16/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='16'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"16",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso17(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='17'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/17/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='17'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"17",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/17/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='17'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"17",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso18(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='18'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/18/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='18'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"18",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/18/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='18'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"18",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso19(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='19'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/19/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='19'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"19",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/19/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='19'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"19",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
     
     def enviar_peticion_acceso20(self, obj):
-        contrato=''
-        usuario_id=''
+        # contrato=''
+        # usuario_id=''
+        self.accesoIntento='20'
         threading.Thread(target=self.popUpAperturaEsperar).start()
         self.sm.current = 'espera'
-        try:
-            contrato = store.get('datos_usuario')['contrato']
-            usuario_id = store.get('datos_usuario')['id_usuario']
-            modoInternet = store.get('cambiar_modo')['modoInternet']
-            if contrato and usuario_id:
-                if not modoInternet:
-                    try:
-                        #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
-                        requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/20/seguricel_wifi_activo", timeout=3)
-                        self.cerrarPopUPEspera()
-                    except:
-                        self.accesoIntento='20'
-                        self.popUpIntentoAperturaInternet()
-                        # self.dialogo.text='No fue posible enviar la peticion'
-                        # self.dialogo.open()
-                    finally:
-                        pass
-                        #self.cerrarPopUPEspera()
-                else:
-                    try:
-                        requests.post(url=f"{URL_API}apertura/", 
-                        json={"contrato":contrato,
-                            "acceso":"20",
-                            "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
-                        if not self.corriendofeedback:
-                            threading.Thread(target=self.feedbacks).start()
-                    except:
-                        self.cerrarPopUPEspera()
-                        self.dialogo.text='No fue posible enviar la peticion'
-                        self.dialogo.open()
-        except Exception as e:
-            self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
-            self.dialogo.open()
+        # try:
+        #     contrato = store.get('datos_usuario')['contrato']
+        #     usuario_id = store.get('datos_usuario')['id_usuario']
+        #     modoInternet = store.get('cambiar_modo')['modoInternet']
+        #     if contrato and usuario_id:
+        #         if not modoInternet:
+        #             try:
+        #                 #requests.get(url=f"{URL}seguricel_wifi_activo", timeout=3)
+        #                 requests.post(url=f"{self.servidorLocal}:43157/{usuario_id}/20/seguricel_wifi_activo", timeout=3)
+        #                 self.cerrarPopUPEspera()
+        #             except:
+        #                 self.accesoIntento='20'
+        #                 self.popUpIntentoAperturaInternet()
+        #                 # self.dialogo.text='No fue posible enviar la peticion'
+        #                 # self.dialogo.open()
+        #             finally:
+        #                 pass
+        #                 #self.cerrarPopUPEspera()
+        #         else:
+        #             try:
+        #                 requests.post(url=f"{URL_API}apertura/", 
+        #                 json={"contrato":contrato,
+        #                     "acceso":"20",
+        #                     "id_usuario":usuario_id},auth=('mobile_access', 'S3gur1c3l_mobile@'), timeout=3)
+        #                 if not self.corriendofeedback:
+        #                     threading.Thread(target=self.feedbacks).start()
+        #             except:
+        #                 self.cerrarPopUPEspera()
+        #                 self.dialogo.text='No fue posible enviar la peticion'
+        #                 self.dialogo.open()
+        # except Exception as e:
+        #     self.dialogo.text=f'Hubo un error al intentar enviar la solicitud: {e}'
+        #     self.dialogo.open()
             
                 # print(contrato)
                 # print(usuario_id)
