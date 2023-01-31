@@ -43,22 +43,7 @@ class Dispatcher(BluetoothDispatcher):
     # Need to turn on the adapter, before service is started
     @require_bluetooth_enabled
     def start_service(self):
-        content = GridLayout(cols=1)
-        btnCerrar = Button(text='Cerrar', size_hint = (.5, 0.7), font_size = "20sp")
-        content.add_widget(Label(text="BLUETOOTH\nACTIVO", 
-                                 font_size='30sp',halign='center',valign='middle', size_hint=(1, .9)))
-        content.add_widget(btnCerrar)
-        mensajePopUp = Popup(
-                title='¡AVISO!',
-                content=content,
-                size_hint=(.9, .6),
-                auto_dismiss=False,
-                title_align='center',
-                title_size= '50sp',
-            )
-        mensajePopUp.open()
-            
-        btnCerrar.bind(on_press=mensajePopUp.dismiss)
+        threading.Thread(target=self.abrirPopUpEsperaBluetooth).start()
         uuid = store.get('datos_usuario')['beacon_uuid']
         self.service.start(
             self.activity,
@@ -66,10 +51,47 @@ class Dispatcher(BluetoothDispatcher):
             # Pass UUID to advertise
             
         )
-        #MDApp.get_running_app().stop()  # Can close the app, service will continue running
 
-    # def stop_service(self):
-    #     self.service.stop(self.activity)
+        threading.Thread(target=self.cerrarPopUpEsperaBluetooth).start()
+
+        #self.cerrarPopUpEsperaBluetooth()
+        #MDApp.get_running_app().stop()  # Can close the app, service will continue running
+    
+
+    @mainthread
+    def abrirPopUpEsperaBluetooth(self):
+        self.popUpEsperaBluetooth = Popup(
+            title='ESPERE...',
+            content=Label(text="Activando\nBluetooth...",font_size='30sp',halign='center',valign='middle'),
+            size_hint=(.9, .6),
+            auto_dismiss=False,
+            title_align='center',
+            title_size= '35sp',
+        )
+        self.popUpEsperaBluetooth.open()
+        #return mensajePopUp
+    @mainthread
+    def cerrarPopUpEsperaBluetooth(self):
+        self.popUpEsperaBluetooth.dismiss()
+        content = GridLayout(cols=1)
+        btnCerrar = Button(text='Detener', size_hint = (.5, 0.7), font_size = "20sp")
+        content.add_widget(Label(text="BLUETOOTH\nACTIVO", 
+                                 font_size='30sp',halign='center',valign='middle', size_hint=(1, .9)))
+        content.add_widget(btnCerrar)
+        self.mensajePopUp = Popup(
+                title='¡AVISO!',
+                content=content,
+                size_hint=(.9, .6),
+                auto_dismiss=False,
+                title_align='center',
+                title_size= '50sp',
+            )
+        self.mensajePopUp.open()
+        btnCerrar.bind(on_press=self.stop_service)
+
+    def stop_service(self, obj):
+        self.service.stop(self.activity)
+        self.mensajePopUp.dismiss()
 
 class seguricel_prototipo(MDApp):
 
@@ -151,7 +173,7 @@ class seguricel_prototipo(MDApp):
         btn6= Builder.load_string(helper.boton_bluetooth)
         btn6.size_hint = (None, None)
         btn6.size=(self.tamano_x, self.tamano_y)
-        btn6.font_size="50sp"
+        btn6.font_size="40sp"
         btn6.text = 'BLUETOOTH'
 
         # btn5 = Button(
@@ -433,7 +455,7 @@ class seguricel_prototipo(MDApp):
             size_hint=(.9, .6),
             auto_dismiss=False,
             title_align='center',
-            title_size= '50sp',
+            title_size= '35sp',
         )
         self.mensajePopUp.open()
         #return mensajePopUp
@@ -459,6 +481,7 @@ class seguricel_prototipo(MDApp):
 
     def flagPopUpPtaABierta(self,obj):
         self.cerradoPopUpPtaAbierta=True
+        self.t1 = time.perf_counter()
 
     @mainthread
     def cerrarPopUPEspera(self):
@@ -568,9 +591,9 @@ class seguricel_prototipo(MDApp):
         while not self.killThread:
             try:
                 if self.primerAviso:
-                    t1 = time.perf_counter()
+                    self.t1 = time.perf_counter()
                 t2=time.perf_counter()
-                esperaPopUp=t2-t1
+                esperaPopUp=t2-self.t1
                 if self.cerradoPopUpPtaAbierta and (esperaPopUp >= 30 or self.primerAviso):
                     if self.cambiarDatosPtaAbierta:
                         peatonales = store.get('accesos')['peatonales']
@@ -593,7 +616,7 @@ class seguricel_prototipo(MDApp):
                         self.popUpPuertaAbierta(accesoDescripcion)
                         self.cerradoPopUpPtaAbierta=False
                         self.primerAviso=False
-                        t1 = time.perf_counter()
+                        #self.t1 = time.perf_counter()
             except Exception as e:
                 print(f'{e} - fallo en puerta abierta')
             #time.sleep(5)
@@ -1358,7 +1381,7 @@ class seguricel_prototipo(MDApp):
         blayout.add_widget(btnSi)
         blayout.add_widget(btnNo)
         content.add_widget(Label(text='¿Seguro que desea\nabrir por internet?', 
-                                 font_size='30sp',halign='center',valign='middle', size_hint=(1, .9)))
+                                 font_size='25sp',halign='center',valign='middle', size_hint=(1, .9)))
         content.add_widget(blayout)
         self.popUpIntento = Popup(
                 title='¡AVISO!',

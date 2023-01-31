@@ -24,9 +24,14 @@ def main():
         tx_power=TXPower.MAX,
     )
     advertiser.start()
+    print('inicio!')
+    #t1=time.perf_counter()
     while True:
         time.sleep(0xDEAD)
+        # time.sleep(60)
+    print('termino cuenta!')
 
 
 if __name__ == "__main__":
     main()
+    print('termino bluetooth!')
